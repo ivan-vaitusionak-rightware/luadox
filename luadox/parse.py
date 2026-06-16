@@ -910,14 +910,22 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        snippet_path = os.path.join(
-                            self.config.get('project', 'snippets_path'),
-                            tag.snippet
-                        )
-                        snippet_path = os.path.abspath(snippet_path)
-                        with open(snippet_path, 'r') as handle:
-                            for line in handle.read().splitlines():
-                                content.md().append(line)
+                        # Snippets are optional example files.  A missing snippet (or no
+                        # configured snippets_path) only means an example is omitted, so
+                        # warn and carry on rather than aborting the whole build.
+                        snippets_dir = self.config.get('project', 'snippets_path', fallback=None)
+                        try:
+                            if not snippets_dir:
+                                raise FileNotFoundError('no snippets_path configured')
+                            snippet_path = os.path.abspath(os.path.join(snippets_dir, tag.snippet))
+                            with open(snippet_path, 'r') as handle:
+                                for line in handle.read().splitlines():
+                                    content.md().append(line)
+                        except OSError as e:
+                            log.warning(
+                                '%s:%s: skipping snippet "%s": %s',
+                                self.ctx.file, self.ctx.line, tag.snippet, e
+                            )
 
                 elif isinstance(tag, tags.AdmonitionTag):
                     heading = self.refs_to_markdown(tag.title or tag.type.title())
