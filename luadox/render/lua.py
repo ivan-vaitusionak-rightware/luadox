@@ -34,6 +34,15 @@ TYPE_MAP = {
     'float': 'number',
     'double': 'number',
     'void': 'nil',
+    # C/C++ scalar types that leak into bindings documentation.
+    'unsigned': 'integer',
+    'uint': 'integer',
+    'size_t': 'integer',
+    'ssize_t': 'integer',
+    'ptrdiff_t': 'integer',
+    'int8_t': 'integer', 'int16_t': 'integer', 'int32_t': 'integer', 'int64_t': 'integer',
+    'uint8_t': 'integer', 'uint16_t': 'integer', 'uint32_t': 'integer', 'uint64_t': 'integer',
+    'char': 'string',
 }
 
 # Default type assigned to a documented field that lacks an explicit @type.
@@ -177,6 +186,10 @@ class LuaLSRenderer(Renderer):
         lines = [self._strip_links(col.heading)] if col.heading else []
         lines.extend(self._content_to_lines(col.content))
         self._emit_doc(out, lines)
+        # Expose the table's name as a type alias so it resolves when used in a type
+        # position (e.g. `@treturn SomeEnum`).  Members default to integers, so the
+        # alias targets the member type; the table itself still provides member access.
+        out('---@alias {} {}'.format(col.name, DEFAULT_TABLE_FIELD_TYPE))
         out('{} = {{}}'.format(col.name))
         out('')
         self._emit_members(out, col, DEFAULT_TABLE_FIELD_TYPE)
@@ -322,6 +335,27 @@ class LuaLSRenderer(Renderer):
             elif isinstance(topref, ModuleRef):
                 self._emit_module(out, topref)
             # ManualRefs are prose pages with no API surface, so they're skipped.
+
+        # Some members live under a namespace table (e.g. `gfx.Foo = nil`) whose root
+        # is never declared on its own, which the language server flags as an undefined
+        # global.  Declare a stub table for any such root.
+        declared = set()
+        used_roots = set()
+        for line in lines:
+            m = re.match(r'([A-Za-z_]\w*) = ', line) or re.match(r'function ([A-Za-z_]\w*)\(', line)
+            if m:
+                declared.add(m.group(1))
+            m = re.match(r'(?:function )?([A-Za-z_]\w*)[.:]', line)
+            if m:
+                used_roots.add(m.group(1))
+        stubs = sorted(used_roots - declared)
+        if stubs:
+            insert = ['-- Namespace tables for members declared under them.']
+            insert += ['{} = {{}}'.format(name) for name in stubs]
+            insert.append('')
+            # Place stubs right after the header block (first blank line).
+            pos = lines.index('') + 1 if '' in lines else len(lines)
+            lines[pos:pos] = insert
 
         outfile = self._get_outfile(dst)
         with open(outfile, 'w', encoding='utf-8') as f:
