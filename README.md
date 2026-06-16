@@ -1042,6 +1042,34 @@ Mappings of note:
   class references, are passed through unchanged.
 * Manual pages have no API surface and are not included in the output.
 
+Scripts are often executed by the host application inside a prepared environment —
+with injected globals, and with members from one class merged onto another at runtime.
+An optional `[lua]` config section lets the generated definitions mirror that so real
+scripts type-check cleanly:
+
+```ini
+[lua]
+# Globals the host injects into the script environment, as `name:type` tokens
+# (whitespace/newline separated).  Each is emitted as a typed global declaration so
+# references to it resolve.
+globals = contextNode:Node
+
+# If set, a class Foo additionally inherits class Foo<mixin_suffix> when that class
+# exists.  This models runtime composition such as Kanzi's
+# createClass(Foo, super, FooMetadata), where the FooMetadata table carries members
+# (e.g. property and message types) that are accessed as Foo.Member.
+mixin_suffix = Metadata
+
+# If set, any cross references on a documentation line containing this phrase are
+# added as extra parent classes.  This captures mixins that aren't in the single
+# inheritance chain -- e.g. Kanzi "concept" classes, which the metadata documents as
+# "Inherits properties and message types from @{A}, @{B}, @{C}." -- so members they
+# provide resolve transitively (e.g. Button2D.ClickMessage via ButtonConcept).
+mixin_doc_phrase = Inherits properties and message types from
+```
+
+All three options are optional; without a `[lua]` section the output is unchanged.
+
 ## Docker Image
 
 LuaDox is also available as a [Docker image on Docker Hub](https://hub.docker.com/r/jtackaberry/luadox):
