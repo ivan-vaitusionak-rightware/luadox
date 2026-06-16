@@ -19,10 +19,12 @@ from typing import Dict, Type
 from .base import Renderer
 from .html import HTMLRenderer
 from .json import JSONRenderer
+from .lua import LuaLSRenderer
 from .yaml import YAMLRenderer
 
 RENDERERS: Dict[str, Type[Renderer]] = {
     'html': HTMLRenderer,
     'json': JSONRenderer,
+    'lua': LuaLSRenderer,
     'yaml': YAMLRenderer,
 }
