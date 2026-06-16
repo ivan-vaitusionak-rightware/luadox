@@ -181,13 +181,66 @@ class LuaLSRenderer(Renderer):
         out('')
         self._emit_members(out, col, DEFAULT_TABLE_FIELD_TYPE)
 
+    def _doc_mixins(self, topref: ClassRef) -> List[str]:
+        """
+        Extracts additional parent classes named in a configured doc phrase.
+
+        Some APIs document runtime composition in prose, e.g. Kanzi metadata classes
+        say "Inherits properties and message types from @{A}, @{B}, @{C}." -- including
+        mixin/"concept" classes that don't appear in the single-inheritance chain.
+        When 'mixin_doc_phrase' is configured, the cross references on the line carrying
+        that phrase are resolved to class names and treated as parents, so members
+        provided by those classes resolve transitively.
+        """
+        if not self._mixin_phrase:
+            return []
+        names: List[str] = []
+        for elem in topref.content:
+            if not isinstance(elem, Markdown):
+                continue
+            for line in elem.get().split('\n'):
+                if self._mixin_phrase not in line:
+                    continue
+                for refid in re.findall(r'luadox:([0-9a-fA-F]+)', line):
+                    ref = self.parser.refs_by_id.get(refid)
+                    if isinstance(ref, ClassRef):
+                        names.append(ref.name)
+        return names
+
+    def _class_parents(self, topref: ClassRef) -> List[str]:
+        """
+        Returns the LuaLS parent classes for a class, de-duplicated in order:
+
+        * its @inherits superclass;
+        * an optional mixin class <name><mixin_suffix> when configured and present
+          (models e.g. Kanzi's createClass(Foo, super, FooMetadata), where FooMetadata
+          carries the property and message types accessed as Foo.Member); and
+        * any classes named in the configured mixin_doc_phrase (see _doc_mixins), which
+          captures further mixins such as Kanzi "concepts".
+        """
+        parents: List[str] = []
+
+        def add(name: Optional[str]) -> None:
+            if name and name != topref.name and name not in parents:
+                parents.append(name)
+
+        add(topref.flags.get('inherits'))
+        if self._mixin_suffix:
+            candidate = topref.name + self._mixin_suffix
+            if candidate in self._classnames:
+                add(candidate)
+        for name in self._doc_mixins(topref):
+            if name in self._classnames:
+                add(name)
+        return parents
+
     def _emit_class(self, out: Callable[[str], None], topref: ClassRef) -> None:
         self.ctx.update(ref=topref)
         self._emit_doc(out, self._content_to_lines(topref.content))
         decl = '---@class {}'.format(topref.name)
-        parent = topref.flags.get('inherits')
-        if parent:
-            decl += ' : {}'.format(parent)
+        parents = self._class_parents(topref)
+        if parents:
+            decl += ' : {}'.format(', '.join(parents))
         out(decl)
         out('{} = {{}}'.format(topref.name))
         out('')
@@ -231,6 +284,17 @@ class LuaLSRenderer(Renderer):
         Renders toprefs as a single LuaLS definition file at the given output path
         (or directory, in which case luadox.lua is written into it).
         """
+        # Optional [lua] config: a mixin suffix (see _class_parents) and a set of
+        # globals the host injects into the script environment, as `name:type` tokens
+        # (e.g. `globals = contextNode:Node`).
+        self._classnames = {t.name for t in toprefs if isinstance(t, ClassRef)}
+        self._mixin_suffix = self.config.get('lua', 'mixin_suffix', fallback='') or ''
+        self._mixin_phrase = self.config.get('lua', 'mixin_doc_phrase', fallback='') or ''
+        env_globals: List[tuple] = []
+        for tok in files_str_to_list(self.config.get('lua', 'globals', fallback='')):
+            name, _, typ = tok.partition(':')
+            env_globals.append((name, typ or 'any'))
+
         lines: List[str] = []
         out = lines.append
         out('---@meta')
@@ -241,6 +305,13 @@ class LuaLSRenderer(Renderer):
             out('-- {}'.format(title))
         out('-- This file is generated. Do not edit.')
         out('')
+
+        if env_globals:
+            out('-- Globals injected into the script execution environment.')
+            for name, typ in env_globals:
+                out('---@type {}'.format(self._map_type([typ])))
+                out('{} = nil'.format(name))
+            out('')
 
         for topref in toprefs:
             if topref.userdata.get('empty') and topref.implicit:
