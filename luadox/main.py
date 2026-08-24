@@ -152,6 +152,8 @@ def get_config(args: argparse.Namespace) -> ConfigParser:
             config.set('manual', id, fname)
     if args.snippet_path:
         config.set('project', 'snippet_path', args.snippet_path)
+    if args.allow_incomplete:
+        config.set('project', 'allow_incomplete', args.allow_incomplete)
     if args.head_template:
         config.set('project', 'head_template', args.head_template)
     if args.foot_template:
@@ -196,6 +198,9 @@ def main():
                    'luadox.<someext> for single-file renderers)')
     p.add_argument('--snippet-path', action='store', type=str, metavar='PATH',
                    help='Path to custom snippets to be injected into generated documentation')
+    p.add_argument('--allow-incomplete', action='store', type=str, metavar='CATEGORIES',
+                   help='Comma-separated diagnostic categories (e.g. snippets) that may leave '
+                   'the rendered documentation incomplete without failing the run (default none)')
     p.add_argument('-m', '--manual', action='store', type=str, metavar='ID=FILENAME', nargs='*',
                    help='Add manual page in the form id=filename.md')
     p.add_argument('--css', action='store', type=str, metavar='FILE', nargs='*', 
@@ -276,5 +281,12 @@ def main():
     except Exception as e:
         log.exception('unhandled error rendering around %s:%s: %s', parser.ctx.file, parser.ctx.line, e)
         sys.exit(1)
+
+    # Rendering completed above so the output is available for inspection, but
+    # collected diagnostics mean the documentation is incomplete: fail the run
+    # unless allow_incomplete explicitly accepts publishing with the problems.
+    exitcode = parser.diagnostics.summarize()
+    if exitcode:
+        sys.exit(exitcode)
 
     log.info('done')
