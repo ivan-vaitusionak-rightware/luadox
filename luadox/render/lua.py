@@ -99,10 +99,9 @@ class LuaLSRenderer(Renderer):
                 # class.  That is a documentation source bug: report it and emit
                 # the name verbatim rather than repairing it silently.
                 if '::' in part:
-                    log.error(
-                        '%s:%s: type name "%s" uses C++ scope syntax; fix the '
-                        'documentation source to use "."',
-                        self.ctx.file, self.ctx.line, part
+                    self.parser.diagnostics.add(
+                        'types', self.ctx.file, self.ctx.line,
+                        'type name "{}" uses C++ scope syntax; use "."'.format(part)
                     )
                     mapped.append(part)
                     continue
@@ -114,18 +113,18 @@ class LuaLSRenderer(Renderer):
                 # fully qualified class or table declaration emitted elsewhere in
                 # the file. Non-type references (fields, functions) that happen to
                 # share the name must not hijack a type position, so anything else
-                # passes through as written -- with a warning when a plain name
-                # neither resolves nor is a language-server built-in, since the
-                # language server will not diagnose it beyond undefined-doc-name.
+                # passes through as written -- reported when a plain name neither
+                # resolves nor is a language-server built-in, since the language
+                # server cannot diagnose it beyond undefined-doc-name.
                 ref = self.parser.resolve_ref(part)
                 if isinstance(ref, (ClassRef, TableRef)):
                     mapped.append(ref.name)
                     continue
                 if part not in LUALS_BUILTIN_TYPES and re.fullmatch(r'[A-Za-z_][\w.]*', part):
-                    log.warning(
-                        '%s:%s: type name "%s" does not resolve to a documented '
-                        'class or table',
-                        self.ctx.file, self.ctx.line, part
+                    self.parser.diagnostics.add(
+                        'types', self.ctx.file, self.ctx.line,
+                        'type name "{}" does not resolve to a documented class '
+                        'or table'.format(part)
                     )
                 mapped.append(part)
         return '|'.join(mapped) if mapped else 'any'
