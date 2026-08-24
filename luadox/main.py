@@ -150,8 +150,8 @@ def get_config(args: argparse.Namespace) -> ConfigParser:
         for spec in args.manual:
             id, fname = spec.split('=')
             config.set('manual', id, fname)
-    if args.snippets_path:
-        config.set('project', 'snippets_path', args.snippets_path)
+    if args.snippet_path:
+        config.set('project', 'snippet_path', args.snippet_path)
     if args.head_template:
         config.set('project', 'head_template', args.head_template)
     if args.foot_template:
@@ -194,7 +194,7 @@ def main():
                    ' treated as a file path if it ends with the appropriate extension '
                    '(e.g. .json) (default: ./out/ for multi-file renderers, or '
                    'luadox.<someext> for single-file renderers)')
-    p.add_argument('--snippets-path', action='store', type=str, metavar='PATH',
+    p.add_argument('--snippet-path', action='store', type=str, metavar='PATH',
                    help='Path to custom snippets to be injected into generated documentation')
     p.add_argument('-m', '--manual', action='store', type=str, metavar='ID=FILENAME', nargs='*',
                    help='Add manual page in the form id=filename.md')
