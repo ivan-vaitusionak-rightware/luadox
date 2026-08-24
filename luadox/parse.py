@@ -20,6 +20,7 @@ from configparser import ConfigParser
 from typing import IO, Optional, Union, Tuple, List, Dict, Type, Match
 
 from . import tags
+from .diagnostics import Diagnostics
 from .tags import TagParser, ParseError
 from .log import log
 from .reference import *
@@ -123,6 +124,10 @@ class Parser:
         # This holds the context of the current file and reference being processed
         self.ctx = Context()
         self.tag_parser = TagParser()
+        # Shared collector for problems that leave the rendered documentation
+        # incomplete; main() summarizes it and derives the exit code after
+        # rendering. Renderers reach it through their parser reference.
+        self.diagnostics = Diagnostics.from_config(config)
 
 
     def _next_line(self, strip=True) -> Tuple[Union[int, None], Union[str, None]]:
@@ -910,14 +915,23 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        snippet_path = os.path.join(
-                            self.config.get('project', 'snippet_path'),
-                            tag.snippet
-                        )
-                        snippet_path = os.path.abspath(snippet_path)
-                        with open(snippet_path, 'r') as handle:
-                            for line in handle.read().splitlines():
-                                content.md().append(line)
+                        # A missing snippet (or no configured snippet_path) is recorded
+                        # and reported at the end of the run: parsing continues so all
+                        # misses surface at once, but the run still fails unless
+                        # allow_incomplete accepts publishing without the examples.
+                        snippet_dir = self.config.get('project', 'snippet_path', fallback=None)
+                        try:
+                            if not snippet_dir:
+                                raise FileNotFoundError('no snippet_path configured')
+                            snippet_path = os.path.abspath(os.path.join(snippet_dir, tag.snippet))
+                            with open(snippet_path, 'r') as handle:
+                                for line in handle.read().splitlines():
+                                    content.md().append(line)
+                        except OSError as e:
+                            self.diagnostics.add(
+                                'snippets', self.ctx.file, self.ctx.line,
+                                'missing snippet "{}": {}'.format(tag.snippet, e)
+                            )
 
                 elif isinstance(tag, tags.AdmonitionTag):
                     heading = self.refs_to_markdown(tag.title or tag.type.title())
