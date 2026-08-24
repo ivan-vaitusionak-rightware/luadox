@@ -1044,11 +1044,11 @@ Mappings of note:
 
 Scripts are often executed by the host application inside a prepared environment —
 with injected globals, and with members from one class merged onto another at runtime.
-An optional `[lua]` config section lets the generated definitions mirror that so real
+An optional `[luals]` config section lets the generated definitions mirror that so real
 scripts type-check cleanly:
 
 ```ini
-[lua]
+[luals]
 # Globals the host injects into the script environment, as `name:type` tokens
 # (whitespace/newline separated).  Each is emitted as a typed global declaration so
 # references to it resolve.
@@ -1068,7 +1068,7 @@ mixin_suffix = Metadata
 mixin_doc_phrase = Inherits properties and message types from
 ```
 
-All three options are optional; without a `[lua]` section the output is unchanged.
+All three options are optional; without a `[luals]` section the output is unchanged.
 
 ## Docker Image
 
