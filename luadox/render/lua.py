@@ -16,7 +16,7 @@ __all__ = ['LuaLSRenderer']
 
 import os
 import re
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 from ..log import log
 from ..parse import *
@@ -321,9 +321,15 @@ class LuaLSRenderer(Renderer):
         self._classnames = {t.name for t in toprefs if isinstance(t, ClassRef)}
         self._mixin_suffix = self.config.get('lua', 'mixin_suffix', fallback='') or ''
         self._mixin_phrase = self.config.get('lua', 'mixin_doc_phrase', fallback='') or ''
-        env_globals: List[tuple] = []
+        env_globals: List[Tuple[str, str]] = []
         for tok in files_str_to_list(self.config.get('lua', 'globals', fallback='')):
             name, _, typ = tok.partition(':')
+            # A malformed name would be emitted as an assignment target and make
+            # the whole definitions file syntactically invalid, so reject the
+            # token instead.
+            if not re.fullmatch(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*)*', name):
+                log.error('invalid [lua] globals token "%s": expected name[:type]', tok)
+                continue
             env_globals.append((name, typ or 'any'))
 
         lines: List[str] = []
