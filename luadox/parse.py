@@ -124,9 +124,7 @@ class Parser:
         # This holds the context of the current file and reference being processed
         self.ctx = Context()
         self.tag_parser = TagParser()
-        # Shared collector for problems that leave the rendered documentation
-        # incomplete; main() summarizes it and derives the exit code after
-        # rendering. Renderers reach it through their parser reference.
+        # Problems that leave the rendered documentation incomplete.
         self.diagnostics = Diagnostics.from_config(config)
 
 
@@ -915,10 +913,7 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        # A missing snippet (or no configured snippet_path) is recorded
-                        # and reported at the end of the run: parsing continues so all
-                        # misses surface at once, but the run still fails unless
-                        # allow_incomplete accepts publishing without the examples.
+                        # The snippet file may be missing, or snippet_path unconfigured.
                         snippet_dir = self.config.get('project', 'snippet_path', fallback=None)
                         try:
                             if not snippet_dir:
