@@ -25,6 +25,6 @@ from .yaml import YAMLRenderer
 RENDERERS: Dict[str, Type[Renderer]] = {
     'html': HTMLRenderer,
     'json': JSONRenderer,
-    'lua': LuaLSRenderer,
+    'luals': LuaLSRenderer,
     'yaml': YAMLRenderer,
 }

@@ -940,11 +940,11 @@ title = My Lua Project
 # This can be spread across multiple lines if you want, as long as the
 # other lines are indented.
 files = ../app/rtk/widget.lua ../app/rtk/
-# How to render the parsed content: html, json, yaml, or lua (default: html).
+# How to render the parsed content: html, json, yaml, or luals (default: html).
 # See the "Output formats" section below for details.
 renderer = html
 # The directory containing the rendered output files, which will be created
-# if necessary.  For single-file renderers (json, yaml, lua) this may instead
+# if necessary.  For single-file renderers (json, yaml, luals) this may instead
 # be a file path with the appropriate extension.
 outdir = html
 # Path to a custom css file that will be included on every page.  This will
@@ -1002,7 +1002,7 @@ section.
 | `html` (default) | a directory | A self-contained, searchable, browsable documentation website. |
 | `json` | a single file | A structured representation of all parsed content, intended for downstream tooling. |
 | `yaml` | a single file | The same structure as `json` but serialized as YAML. |
-| `lua` | a single file | A Lua definition file annotated for the [Lua language server](https://luals.github.io/). |
+| `luals` | a single file | A Lua definition file annotated for the [Lua language server](https://luals.github.io/). |
 
 For the single-file renderers, the output path (`-o`/`out`) may be a file with the
 matching extension (e.g. `api.lua`), or a directory into which a `luadox.<ext>` file is
@@ -1010,15 +1010,15 @@ written.
 
 ### Lua language server definitions
 
-The `lua` renderer emits a single [`---@meta`](https://luals.github.io/wiki/annotations/#meta)
+The `luals` renderer emits a single [`---@meta`](https://luals.github.io/wiki/annotations/#meta)
 definition file using [LuaLS/EmmyLua annotations](https://luals.github.io/wiki/annotations/)
-(`---@class`, `---@field`, `---@param`, `---@return`, `---@type`, ...).  This is useful
+(`---@class`, `---@type`, `---@param`, `---@return`, `---@type`, ...).  This is useful
 when the documented API has no Lua implementation of its own — for example a native API
 exposed to Lua by the host application — and you want editor features (completion, hover
 documentation, and signature help) for code that *uses* the API.
 
 ```bash
-$ luadox -r lua -o defs/myapi.lua ../src/*.lua
+$ luadox -r luals -o defs/myapi.lua ../src/*.lua
 ```
 
 To make the [Lua language server](https://luals.github.io/) pick up the generated
