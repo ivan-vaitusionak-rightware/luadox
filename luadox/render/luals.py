@@ -328,10 +328,10 @@ class LuaLSRenderer(Renderer):
         # globals the host injects into the script environment, as `name:type` tokens
         # (e.g. `globals = contextNode:Node`).
         self._classnames = {t.name for t in toprefs if isinstance(t, ClassRef)}
-        self._mixin_suffix = self.config.get('lua', 'mixin_suffix', fallback='') or ''
-        self._mixin_phrase = self.config.get('lua', 'mixin_doc_phrase', fallback='') or ''
+        self._mixin_suffix = self.config.get('luals', 'mixin_suffix', fallback='') or ''
+        self._mixin_phrase = self.config.get('luals', 'mixin_doc_phrase', fallback='') or ''
         env_globals: List[Tuple[str, str]] = []
-        for tok in files_str_to_list(self.config.get('lua', 'globals', fallback='')):
+        for tok in files_str_to_list(self.config.get('luals', 'globals', fallback='')):
             name, _, typ = tok.partition(':')
             # A malformed name would be emitted as an assignment target and make
             # the whole definitions file syntactically invalid, so reject the
