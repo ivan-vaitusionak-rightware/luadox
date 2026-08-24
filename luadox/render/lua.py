@@ -56,6 +56,12 @@ DEFAULT_TABLE_FIELD_TYPE = 'integer'
 # so they are reduced to their visible link text.
 RE_LUADOX_LINK = re.compile(r'\[([^\]]*)\]\(luadox:[^)]*\)')
 
+# Type names the language server understands without any declaration.
+LUALS_BUILTIN_TYPES = {
+    'any', 'boolean', 'string', 'number', 'integer', 'function', 'table',
+    'thread', 'userdata', 'lightuserdata', 'nil', 'unknown', 'self',
+}
+
 
 class LuaLSRenderer(Renderer):
     """
@@ -84,11 +90,21 @@ class LuaLSRenderer(Renderer):
         mapped: List[str] = []
         for entry in types:
             for part in entry.split('|'):
-                # C++-style scoped names leak into bindings documentation; LuaLS
-                # silently reads everything up to '::' as the type, so a scoped
-                # name would type the parameter as the enclosing class.
-                part = part.strip().replace('::', '.')
+                part = part.strip()
                 if not part:
+                    continue
+                # C++-style scoped names sometimes leak into bindings
+                # documentation.  LuaLS silently reads everything up to '::' as
+                # the type, so the parameter would be typed as the enclosing
+                # class.  That is a documentation source bug: report it and emit
+                # the name verbatim rather than repairing it silently.
+                if '::' in part:
+                    log.error(
+                        '%s:%s: type name "%s" uses C++ scope syntax; fix the '
+                        'documentation source to use "."',
+                        self.ctx.file, self.ctx.line, part
+                    )
+                    mapped.append(part)
                     continue
                 if part in TYPE_MAP:
                     mapped.append(TYPE_MAP[part])
@@ -98,12 +114,20 @@ class LuaLSRenderer(Renderer):
                 # fully qualified class or table declaration emitted elsewhere in
                 # the file. Non-type references (fields, functions) that happen to
                 # share the name must not hijack a type position, so anything else
-                # passes through as written.
+                # passes through as written -- with a warning when a plain name
+                # neither resolves nor is a language-server built-in, since the
+                # language server will not diagnose it beyond undefined-doc-name.
                 ref = self.parser.resolve_ref(part)
                 if isinstance(ref, (ClassRef, TableRef)):
                     mapped.append(ref.name)
-                else:
-                    mapped.append(part)
+                    continue
+                if part not in LUALS_BUILTIN_TYPES and re.fullmatch(r'[A-Za-z_][\w.]*', part):
+                    log.warning(
+                        '%s:%s: type name "%s" does not resolve to a documented '
+                        'class or table',
+                        self.ctx.file, self.ctx.line, part
+                    )
+                mapped.append(part)
         return '|'.join(mapped) if mapped else 'any'
 
     def _content_to_lines(self, content: Content) -> List[str]:
