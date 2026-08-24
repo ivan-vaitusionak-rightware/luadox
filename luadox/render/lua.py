@@ -78,14 +78,32 @@ class LuaLSRenderer(Renderer):
     def _map_type(self, types: List[str]) -> str:
         """
         Converts a list of LuaDox type names into a single LuaLS type expression,
-        translating known primitives and joining alternatives with '|'.
+        translating known primitives, qualifying documented class and table names,
+        and joining alternatives with '|'.
         """
         mapped: List[str] = []
         for entry in types:
             for part in entry.split('|'):
-                part = part.strip()
-                if part:
-                    mapped.append(TYPE_MAP.get(part, part))
+                # C++-style scoped names leak into bindings documentation; LuaLS
+                # silently reads everything up to '::' as the type, so a scoped
+                # name would type the parameter as the enclosing class.
+                part = part.strip().replace('::', '.')
+                if not part:
+                    continue
+                if part in TYPE_MAP:
+                    mapped.append(TYPE_MAP[part])
+                    continue
+                # Resolve names relative to the current scope so an unqualified
+                # name (e.g. FieldOfViewType inside Matrix4x4 docs) maps to the
+                # fully qualified class or table declaration emitted elsewhere in
+                # the file. Non-type references (fields, functions) that happen to
+                # share the name must not hijack a type position, so anything else
+                # passes through as written.
+                ref = self.parser.resolve_ref(part)
+                if isinstance(ref, (ClassRef, TableRef)):
+                    mapped.append(ref.name)
+                else:
+                    mapped.append(part)
         return '|'.join(mapped) if mapped else 'any'
 
     def _content_to_lines(self, content: Content) -> List[str]:
