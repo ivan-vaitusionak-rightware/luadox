@@ -282,9 +282,6 @@ def main():
         log.exception('unhandled error rendering around %s:%s: %s', parser.ctx.file, parser.ctx.line, e)
         sys.exit(1)
 
-    # Rendering completed above so the output is available for inspection, but
-    # collected diagnostics mean the documentation is incomplete: fail the run
-    # unless allow_incomplete explicitly accepts publishing with the problems.
     exitcode = parser.diagnostics.summarize()
     if exitcode:
         sys.exit(exitcode)

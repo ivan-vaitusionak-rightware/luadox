@@ -44,18 +44,20 @@ class Diagnostics:
 
     def summarize(self) -> int:
         """
-        Reports each non-allowed category with all of its entries, and returns
-        the process exit code: 1 if any non-allowed category has entries.
+        Reports each category with all of its entries -- allowed categories as
+        warnings, the rest as errors -- and returns the process exit code:
+        1 if any non-allowed category has entries.
         """
-        failing = {cat: entries for cat, entries in self.entries.items()
-                   if cat not in self.allowed}
-        for category, entries in sorted(failing.items()):
-            log.error('%d %s problem(s) leave the documentation incomplete:',
-                      len(entries), category)
+        failing = False
+        for category, entries in sorted(self.entries.items()):
+            allowed = category in self.allowed
+            failing = failing or not allowed
+            emit = log.warning if allowed else log.error
+            emit('%d %s problem(s) leave the documentation incomplete:',
+                 len(entries), category)
             for entry in entries:
-                log.error('  %s:%s: %s', entry.file, entry.line, entry.message)
+                emit('  %s:%s: %s', entry.file, entry.line, entry.message)
         if failing:
-            log.error('fix the documentation source, or set allow_incomplete = %s '
-                      'to accept the omission', ', '.join(sorted(failing)))
+            log.error('fix the documentation source')
             return 1
         return 0
