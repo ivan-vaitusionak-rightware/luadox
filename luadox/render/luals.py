@@ -100,8 +100,9 @@ class LuaLSRenderer(Renderer):
                 # the name verbatim rather than repairing it silently.
                 if '::' in part:
                     self.parser.diagnostics.add(
-                        'types', self.ctx.file, self.ctx.line,
-                        'type name "{}" uses C++ scope syntax; use "."'.format(part)
+                        'types',
+                        'type name "{}" uses C++ scope syntax; use "."'.format(part),
+                        self.ctx.file, self.ctx.line
                     )
                     mapped.append(part)
                     continue
@@ -122,9 +123,10 @@ class LuaLSRenderer(Renderer):
                     continue
                 if part not in LUALS_BUILTIN_TYPES and re.fullmatch(r'[A-Za-z_][\w.]*', part):
                     self.parser.diagnostics.add(
-                        'types', self.ctx.file, self.ctx.line,
+                        'types',
                         'type name "{}" does not resolve to a documented class '
-                        'or table'.format(part)
+                        'or table'.format(part),
+                        self.ctx.file, self.ctx.line
                     )
                 mapped.append(part)
         return '|'.join(mapped) if mapped else 'any'
