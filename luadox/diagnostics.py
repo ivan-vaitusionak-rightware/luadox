@@ -59,27 +59,27 @@ class Diagnostics:
                         ', '.join(sorted(Diagnostics.CATEGORIES)))
         return Diagnostics(allowed & Diagnostics.CATEGORIES)
 
-    def add(self, category: str, file: Optional[str], line: Optional[int], message: str) -> None:
+    def add(self, category: str, message: str, file: Optional[str] = None,
+            line: Optional[int] = None) -> None:
         emit = log.warning if category in self.allowed else log.error
-        emit('%s:%s: %s', file, line, message)
+        if file:
+            emit('%s:%s: %s', file, line, message)
+        else:
+            emit('%s', message)
         self.entries.setdefault(category, []).append(Entry(file, line, message))
 
     def summarize(self) -> int:
         """
-        Reports each category with all of its entries -- allowed categories as
+        Reports the number of problems in each category -- allowed categories as
         warnings, the rest as errors -- and returns the process exit code:
         1 if any non-allowed category has entries.
         """
-        failing = False
+        failing = sorted(cat for cat in self.entries if cat not in self.allowed)
         for category, entries in sorted(self.entries.items()):
-            allowed = category in self.allowed
-            failing = failing or not allowed
-            emit = log.warning if allowed else log.error
-            emit('%d %s problem(s) leave the documentation incomplete:',
+            emit = log.error if category in failing else log.warning
+            emit('%d %s problem(s) leave the documentation incomplete',
                  len(entries), category)
-            for entry in entries:
-                emit('  %s:%s: %s', entry.file, entry.line, entry.message)
         if failing:
-            log.error('fix the documentation source')
+            log.error('fix the documentation source: %s', ', '.join(failing))
             return 1
         return 0
