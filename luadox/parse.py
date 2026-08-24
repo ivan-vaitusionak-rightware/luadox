@@ -913,20 +913,32 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        # The snippet file may be missing, or snippet_path unconfigured.
+                        # The snippet file may be missing, snippet_path unconfigured, or
+                        # the file undecodable in the project's encoding.
                         snippet_dir = self.config.get('project', 'snippet_path', fallback=None)
-                        try:
-                            if not snippet_dir:
-                                raise FileNotFoundError('no snippet_path configured')
+                        problem = None
+                        if not snippet_dir:
+                            problem = 'no snippet_path configured'
+                        else:
+                            # encoding=None defers to the locale default, which is what
+                            # main.py falls back to for source files.
+                            encoding = self.config.get('project', 'encoding', fallback=None)
                             snippet_path = os.path.abspath(os.path.join(snippet_dir, tag.snippet))
-                            with open(snippet_path, 'r') as handle:
-                                for line in handle.read().splitlines():
-                                    content.md().append(line)
-                        except OSError as e:
+                            try:
+                                with open(snippet_path, encoding=encoding) as handle:
+                                    for line in handle.read().splitlines():
+                                        content.md().append(line)
+                            except (OSError, UnicodeDecodeError) as e:
+                                problem = str(e)
+                        if problem:
                             self.diagnostics.add(
-                                'snippets', self.ctx.file, self.ctx.line,
-                                'missing snippet "{}": {}'.format(tag.snippet, e)
+                                'snippets',
+                                'cannot read snippet "{}": {}'.format(tag.snippet, problem),
+                                self.ctx.file, self.ctx.line
                             )
+                            # Keep the omission visible in the output, so that an allowed
+                            # snippets category cannot publish an empty code block.
+                            content.md().append('MISSING SNIPPET: {}'.format(tag.snippet))
 
                 elif isinstance(tag, tags.AdmonitionTag):
                     heading = self.refs_to_markdown(tag.title or tag.type.title())
