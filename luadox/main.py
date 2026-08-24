@@ -152,6 +152,8 @@ def get_config(args: argparse.Namespace) -> ConfigParser:
             config.set('manual', id, fname)
     if args.snippet_path:
         config.set('project', 'snippet_path', args.snippet_path)
+    if args.allow_missing_snippets:
+        config.set('project', 'allow_missing_snippets', 'true')
     if args.head_template:
         config.set('project', 'head_template', args.head_template)
     if args.foot_template:
@@ -196,6 +198,9 @@ def main():
                    'luadox.<someext> for single-file renderers)')
     p.add_argument('--snippet-path', action='store', type=str, metavar='PATH',
                    help='Path to custom snippets to be injected into generated documentation')
+    p.add_argument('--allow-missing-snippets', action='store_true',
+                   help='Render documentation with missing snippets omitted instead of '
+                   'failing the run (default false)')
     p.add_argument('-m', '--manual', action='store', type=str, metavar='ID=FILENAME', nargs='*',
                    help='Add manual page in the form id=filename.md')
     p.add_argument('--css', action='store', type=str, metavar='FILE', nargs='*', 
@@ -275,6 +280,18 @@ def main():
         renderer.render(toprefs, out)
     except Exception as e:
         log.exception('unhandled error rendering around %s:%s: %s', parser.ctx.file, parser.ctx.line, e)
+        sys.exit(1)
+
+    # Rendering completed above so the output is available for inspection, but
+    # missing snippets mean the documentation is incomplete: fail the run unless
+    # allow_missing_snippets explicitly accepts publishing without the examples.
+    if parser.missing_snippets and not parser.allow_missing_snippets:
+        log.error('%d snippet(s) are missing from the generated documentation:',
+                  len(parser.missing_snippets))
+        for fname, line, snippet, error in parser.missing_snippets:
+            log.error('  %s:%s: "%s" (%s)', fname, line, snippet, error)
+        log.error('fix snippet_path or the snippet files, or set '
+                  'allow_missing_snippets = true to accept the omission')
         sys.exit(1)
 
     log.info('done')
