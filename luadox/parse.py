@@ -123,6 +123,13 @@ class Parser:
         # This holds the context of the current file and reference being processed
         self.ctx = Context()
         self.tag_parser = TagParser()
+        # Snippets that could not be read, as (file, line, snippet, error) tuples.
+        # Unless allow_missing_snippets is enabled, any entry here fails the run
+        # after rendering so missing examples can't slip into published output.
+        self.missing_snippets: List[Tuple[Optional[str], Optional[int], str, str]] = []
+        self.allow_missing_snippets = self.config.getboolean(
+            'project', 'allow_missing_snippets', fallback=False
+        )
 
 
     def _next_line(self, strip=True) -> Tuple[Union[int, None], Union[str, None]]:
@@ -910,9 +917,10 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        # Snippets are optional example files.  A missing snippet (or no
-                        # configured snippet_path) only means an example is omitted, so
-                        # warn and carry on rather than aborting the whole build.
+                        # A missing snippet (or no configured snippet_path) is recorded
+                        # and reported at the end of the run: parsing continues so all
+                        # misses surface at once, but the run still fails unless
+                        # allow_missing_snippets accepts publishing without the examples.
                         snippet_dir = self.config.get('project', 'snippet_path', fallback=None)
                         try:
                             if not snippet_dir:
@@ -922,8 +930,12 @@ class Parser:
                                 for line in handle.read().splitlines():
                                     content.md().append(line)
                         except OSError as e:
-                            log.warning(
-                                '%s:%s: skipping snippet "%s": %s',
+                            self.missing_snippets.append(
+                                (self.ctx.file, self.ctx.line, tag.snippet, str(e))
+                            )
+                            emit = log.warning if self.allow_missing_snippets else log.error
+                            emit(
+                                '%s:%s: missing snippet "%s": %s',
                                 self.ctx.file, self.ctx.line, tag.snippet, e
                             )
 
