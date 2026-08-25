@@ -34,15 +34,6 @@ TYPE_MAP = {
     'float': 'number',
     'double': 'number',
     'void': 'nil',
-    # C/C++ scalar types that leak into bindings documentation.
-    'unsigned': 'integer',
-    'uint': 'integer',
-    'size_t': 'integer',
-    'ssize_t': 'integer',
-    'ptrdiff_t': 'integer',
-    'int8_t': 'integer', 'int16_t': 'integer', 'int32_t': 'integer', 'int64_t': 'integer',
-    'uint8_t': 'integer', 'uint16_t': 'integer', 'uint32_t': 'integer', 'uint64_t': 'integer',
-    'char': 'string',
 }
 
 # Default type assigned to a documented field or table member that lacks an explicit
