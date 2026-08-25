@@ -99,7 +99,7 @@ class LuaLSRenderer(Renderer):
                     mapped.append(TYPE_MAP[part])
                     continue
                 # Resolve names relative to the current scope so an unqualified
-                # name (e.g. FieldOfViewType inside Matrix4x4 docs) maps to the
+                # name (e.g. Color inside Widget docs) maps to the
                 # fully qualified class or table declaration emitted elsewhere in
                 # the file. Non-type references (fields, functions) that happen to
                 # share the name must not hijack a type position, so anything else
@@ -166,7 +166,7 @@ class LuaLSRenderer(Renderer):
         """
         Returns the Lua assignment target for a field.  Fields scoped directly to an
         implicit module are globals (use the bare symbol), otherwise the fully
-        qualified name gives the real access path (e.g. ActivityStatus.Active).
+        qualified name gives the real access path (e.g. Color.Red).
         """
         scope = ref.scope
         if isinstance(scope, ModuleRef) and scope.implicit:
@@ -358,7 +358,7 @@ class LuaLSRenderer(Renderer):
             # the whole definitions file syntactically invalid, so reject the
             # token instead.
             if not re.fullmatch(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*)*', name):
-                log.error('invalid [lua] globals token "%s": expected name[:type]', tok)
+                log.error('invalid [luals] globals token "%s": expected name[:type]', tok)
                 continue
             env_globals.append((name, typ or 'any'))
 
