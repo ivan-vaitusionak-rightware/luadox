@@ -658,6 +658,15 @@ Renders a fenced code block with syntax highlighting in the documentation.  The 
 an optional argument that dictates the syntax highlighting language, which defaults to
 `lua` when not specified.
 
+A second optional argument names a file whose contents become the body of the code block,
+resolved relative to the `snippet_path` config property (or `--snippet-path` on the command
+line).  Both arguments are positional, so the language must be given first:
+`@code lua examples/hello.lua` inserts that file verbatim with Lua highlighting.
+
+A snippet that can't be read doesn't abort the run.  It's collected as a `snippets`
+diagnostic (see [Diagnostics](#diagnostics)) and the code block is rendered with a
+`MISSING SNIPPET` marker in place of the file's contents.
+
 Any commented lines indented within @code are included in the markdown code block. The
 code block terminates as soon as a line has less indentation than the first line under the
 `@code` tag.
@@ -953,6 +962,14 @@ follow = true
 # Character encoding for input files, which defaults to the current system
 # locale.  Output files are always utf8.
 encoding = utf8
+# Directory holding the snippet files that @code, @example and @usage can
+# reference by name.
+snippet_path = ../examples
+# Diagnostic categories that are allowed to leave the rendered documentation
+# incomplete without failing the run, comma-separated.  Any problem in a
+# category not listed here is an error and LuaDox exits non-zero.  Empty by
+# default, which means every problem fails the run.
+allow_incomplete =
 
 [manual]
 # Custom manual pages in the form: id = filename.
@@ -986,6 +1003,40 @@ Link sections are optional. Each section takes these options:
 
 User-defined links currently can't be specified on the command line, they must
 be defined in the config file.
+
+## Diagnostics
+
+Some problems leave the rendered documentation incomplete without stopping LuaDox from
+producing output at all -- a `@code` snippet whose file is missing, for example.  Rather
+than aborting on the first one, LuaDox logs each problem as it's found, finishes rendering
+so the output can still be inspected, and prints a per-category summary at the end.
+
+If any category collected problems, LuaDox exits non-zero, so an incomplete build fails in
+CI.  To publish anyway, name the categories you're willing to accept, either in the config
+file:
+
+```ini
+[project]
+allow_incomplete = snippets
+```
+
+or on the command line:
+
+```bash
+$ luadox -c luadox.conf --allow-incomplete snippets
+```
+
+Accepted categories are reported as warnings instead of errors and no longer affect the
+exit code.  Unrecognized category names are ignored with a warning.
+
+The categories currently defined are:
+
+* `snippets`: a file referenced by `@code`, `@example` or `@usage` couldn't be read,
+   because it's missing, because `snippet_path` isn't configured, or because it isn't
+   decodable using the configured `encoding`.
+
+Only these categories feed the exit code.  Other problems LuaDox reports -- unresolved
+cross references, for instance -- are logged but don't affect it.
 
 ## Docker Image
 
