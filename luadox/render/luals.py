@@ -246,9 +246,9 @@ class LuaLSRenderer(Renderer):
         """
         Extracts additional parent classes named in a configured doc phrase.
 
-        Some APIs document runtime composition in prose, e.g. Kanzi metadata classes
-        say "Inherits properties and message types from @{A}, @{B}, @{C}." -- including
-        mixin/"concept" classes that don't appear in the single-inheritance chain.
+        Some APIs document runtime composition in prose, e.g. a class comment says
+        "Includes members from @{A}, @{B}, @{C}." -- naming mixin classes that don't
+        appear in the single-inheritance chain.
         When 'mixin_doc_phrase' is configured, the cross references on the line carrying
         that phrase are resolved to class names and treated as parents, so members
         provided by those classes resolve transitively.
@@ -274,10 +274,10 @@ class LuaLSRenderer(Renderer):
 
         * its @inherits superclass;
         * an optional mixin class <name><mixin_suffix> when configured and present
-          (models e.g. Kanzi's createClass(Foo, super, FooMetadata), where FooMetadata
-          carries the property and message types accessed as Foo.Member); and
+          (models e.g. a createClass(Foo, super, FooMixin) helper, where FooMixin
+          carries members accessed as Foo.Member); and
         * any classes named in the configured mixin_doc_phrase (see _doc_mixins), which
-          captures further mixins such as Kanzi "concepts".
+          captures further mixins listed in prose.
         """
         parents: List[str] = []
 
@@ -345,9 +345,9 @@ class LuaLSRenderer(Renderer):
         Renders toprefs as a single LuaLS definition file at the given output path
         (or directory, in which case luadox.lua is written into it).
         """
-        # Optional [lua] config: a mixin suffix (see _class_parents) and a set of
+        # Optional [luals] config: a mixin suffix (see _class_parents) and a set of
         # globals the host injects into the script environment, as `name:type` tokens
-        # (e.g. `globals = contextNode:Node`).
+        # (e.g. `globals = app:Application`).
         self._classnames = {t.name for t in toprefs if isinstance(t, ClassRef)}
         self._mixin_suffix = self.config.get('luals', 'mixin_suffix', fallback='') or ''
         self._mixin_phrase = self.config.get('luals', 'mixin_doc_phrase', fallback='') or ''
