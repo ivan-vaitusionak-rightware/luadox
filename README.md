@@ -1143,6 +1143,9 @@ The categories currently defined are:
 * `types`: a type name in the documentation can't be rendered as a valid language server
    type (`luals` renderer only), because it uses C++ scope syntax such as `A::B`, or
    because it names neither a documented class or table nor a built-in type.
+* `untyped`: a function parameter present in the signature has no documented type
+   (`luals` renderer only), so it can only be rendered as `any`.  Undocumented return
+   types are not reported, being indistinguishable from a function that returns nothing.
 
 Only these categories feed the exit code.  Other problems LuaDox reports -- unresolved
 cross references, for instance -- are logged but don't affect it.

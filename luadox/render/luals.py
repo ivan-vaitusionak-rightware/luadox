@@ -199,6 +199,14 @@ class LuaLSRenderer(Renderer):
         self.ctx.update(ref=ref)
         self._emit_doc(out, self._content_to_lines(ref.content))
         for name, types, doc in ref.params:
+            if not types:
+                # The parameter exists in the signature but was never given a type,
+                # so it can only be rendered as 'any' -- report the documentation gap.
+                self.parser.diagnostics.add(
+                    'untyped',
+                    'parameter "{}" of {} has no documented type'.format(name, ref.symbol),
+                    self.ctx.file, self.ctx.line
+                )
             line = '---@param {} {}'.format(name, self._map_type(types))
             desc = self._inline(doc)
             if desc:
