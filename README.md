@@ -1093,20 +1093,20 @@ scripts type-check cleanly:
 # Globals the host injects into the script environment, as `name:type` tokens
 # (whitespace/newline separated).  Each is emitted as a typed global declaration so
 # references to it resolve.
-globals = contextNode:Node
+globals = app:Application
 
 # If set, a class Foo additionally inherits class Foo<mixin_suffix> when that class
-# exists.  This models runtime composition such as Kanzi's
-# createClass(Foo, super, FooMetadata), where the FooMetadata table carries members
-# (e.g. property and message types) that are accessed as Foo.Member.
-mixin_suffix = Metadata
+# exists.  This models runtime composition such as a
+# createClass(Foo, super, FooMixin) helper, where the FooMixin table carries members
+# that are accessed as Foo.Member.
+mixin_suffix = Mixin
 
 # If set, any cross references on a documentation line containing this phrase are
 # added as extra parent classes.  This captures mixins that aren't in the single
-# inheritance chain -- e.g. Kanzi "concept" classes, which the metadata documents as
-# "Inherits properties and message types from @{A}, @{B}, @{C}." -- so members they
-# provide resolve transitively (e.g. Button2D.ClickMessage via ButtonConcept).
-mixin_doc_phrase = Inherits properties and message types from
+# inheritance chain -- classes a doc comment lists as
+# "Includes members from @{A}, @{B}, @{C}." -- so members they
+# provide resolve transitively (e.g. Widget.OnClick via a mixin in that phrase).
+mixin_doc_phrase = Includes members from
 ```
 
 All three options are optional; without a `[luals]` section the output is unchanged.
