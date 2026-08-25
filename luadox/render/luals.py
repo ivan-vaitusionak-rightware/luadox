@@ -16,6 +16,7 @@ __all__ = ['LuaLSRenderer']
 
 import os
 import re
+import sys
 from typing import Callable, List, Optional, Tuple
 
 from ..log import log
@@ -274,8 +275,8 @@ class LuaLSRenderer(Renderer):
 
         * its @inherits superclass;
         * an optional mixin class <name><mixin_suffix> when configured and present
-          (models e.g. a createClass(Foo, super, FooMixin) helper, where FooMixin
-          carries members accessed as Foo.Member); and
+          (a convention where a class Foo has a companion class Foo<mixin_suffix>
+          carrying members accessed as Foo.Member); and
         * any classes named in the configured mixin_doc_phrase (see _doc_mixins), which
           captures further mixins listed in prose.
         """
@@ -354,12 +355,12 @@ class LuaLSRenderer(Renderer):
         env_globals: List[Tuple[str, str]] = []
         for tok in files_str_to_list(self.config.get('luals', 'globals', fallback='')):
             name, _, typ = tok.partition(':')
-            # A malformed name would be emitted as an assignment target and make
-            # the whole definitions file syntactically invalid, so reject the
-            # token instead.
+            # A malformed name would be emitted as an assignment target and make the whole
+            # definitions file syntactically invalid, so fail rather than drop it silently
+            # (a bad config value, handled like the other fatal config errors).
             if not re.fullmatch(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*)*', name):
-                log.error('invalid [luals] globals token "%s": expected name[:type]', tok)
-                continue
+                log.critical('invalid [luals] globals token "%s": expected name[:type]', tok)
+                sys.exit(1)
             env_globals.append((name, typ or 'any'))
 
         lines: List[str] = []
