@@ -1052,7 +1052,7 @@ written.
 
 The `luals` renderer emits a single [`---@meta`](https://luals.github.io/wiki/annotations/#meta)
 definition file using [LuaLS/EmmyLua annotations](https://luals.github.io/wiki/annotations/)
-(`---@class`, `---@type`, `---@param`, `---@return`, `---@type`, ...).  This is useful
+(`---@class`, `---@type`, `---@param`, `---@return`, `---@alias`, ...).  This is useful
 when the documented API has no Lua implementation of its own — for example a native API
 exposed to Lua by the host application — and you want editor features (completion, hover
 documentation, and signature help) for code that *uses* the API.
