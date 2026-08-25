@@ -45,11 +45,9 @@ TYPE_MAP = {
     'char': 'string',
 }
 
-# Default type assigned to a documented field that lacks an explicit @type.
+# Default type assigned to a documented field or table member that lacks an explicit
+# @type.  'any' is permissive: it never produces a false type error on correct code.
 DEFAULT_FIELD_TYPE = 'any'
-# Default type assigned to members of a @table.  Tables in LuaDox are predominantly
-# used to declare enumerations whose members are integers.
-DEFAULT_TABLE_FIELD_TYPE = 'integer'
 
 # Matches the markdown links the prerender stage generates for cross references,
 # whose target is an opaque 'luadox:<id>'.  The language server can't resolve these,
@@ -212,12 +210,18 @@ class LuaLSRenderer(Renderer):
             if desc:
                 line += ' ' + desc
             out(line)
-        for types, doc in ref.returns:
-            line = '---@return {}'.format(self._map_type(types))
-            desc = self._inline(doc)
-            if desc:
-                line += ' # ' + desc
-            out(line)
+        if ref.returns:
+            for types, doc in ref.returns:
+                line = '---@return {}'.format(self._map_type(types))
+                desc = self._inline(doc)
+                if desc:
+                    line += ' # ' + desc
+                out(line)
+        else:
+            # With no documented return the empty definition body makes the language
+            # server infer a nil return and reject `local x = obj:create()`, so fall back
+            # to the same permissive 'any' the fields use rather than claim nil.
+            out('---@return {}'.format(DEFAULT_FIELD_TYPE))
         params = ', '.join(name for name, _, _ in ref.params)
         # ref.symbol is the real source-level callable (Class:method, Class.func, or a
         # bare global), so it produces the correct definition in all cases.
@@ -237,13 +241,15 @@ class LuaLSRenderer(Renderer):
         lines = [self._strip_links(col.heading)] if col.heading else []
         lines.extend(self._content_to_lines(col.content))
         self._emit_doc(out, lines)
-        # Expose the table's name as a type alias so it resolves when used in a type
-        # position (e.g. `@treturn SomeEnum`).  Members default to integers, so the
-        # alias targets the member type; the table itself still provides member access.
-        out('---@alias {} {}'.format(col.name, DEFAULT_TABLE_FIELD_TYPE))
+        # Model the table as a class so its name resolves in a type position (e.g.
+        # `@treturn SomeEnum`) and its members can be accessed.  Members default to the
+        # same permissive 'any' as class fields: a @table is not necessarily an integer
+        # enumeration -- many are records of typed values (e.g. property tables) -- so a
+        # blanket integer default produced false type errors on correct code.
+        out('---@class {}'.format(col.name))
         out('{} = {{}}'.format(col.name))
         out('')
-        self._emit_members(out, col, DEFAULT_TABLE_FIELD_TYPE)
+        self._emit_members(out, col, DEFAULT_FIELD_TYPE)
 
     def _doc_mixins(self, topref: ClassRef) -> List[str]:
         """
