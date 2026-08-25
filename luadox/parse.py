@@ -20,6 +20,7 @@ from configparser import ConfigParser
 from typing import IO, Optional, Union, Tuple, List, Dict, Type, Match
 
 from . import tags
+from .diagnostics import Diagnostics
 from .tags import TagParser, ParseError
 from .log import log
 from .reference import *
@@ -123,6 +124,8 @@ class Parser:
         # This holds the context of the current file and reference being processed
         self.ctx = Context()
         self.tag_parser = TagParser()
+        # Problems that leave the rendered documentation incomplete.
+        self.diagnostics = Diagnostics.from_config(config)
 
 
     def _next_line(self, strip=True) -> Tuple[Union[int, None], Union[str, None]]:
@@ -910,14 +913,32 @@ class Parser:
                     dedent = None
 
                     if tag.snippet:
-                        snippet_path = os.path.join(
-                            self.config.get('project', 'snippet_path'),
-                            tag.snippet
-                        )
-                        snippet_path = os.path.abspath(snippet_path)
-                        with open(snippet_path, 'r') as handle:
-                            for line in handle.read().splitlines():
-                                content.md().append(line)
+                        # The snippet file may be missing, snippet_path unconfigured, or
+                        # the file undecodable in the project's encoding.
+                        snippet_dir = self.config.get('project', 'snippet_path', fallback=None)
+                        problem = None
+                        if not snippet_dir:
+                            problem = 'no snippet_path configured'
+                        else:
+                            # encoding=None defers to the locale default, which is what
+                            # main.py falls back to for source files.
+                            encoding = self.config.get('project', 'encoding', fallback=None)
+                            snippet_path = os.path.abspath(os.path.join(snippet_dir, tag.snippet))
+                            try:
+                                with open(snippet_path, encoding=encoding) as handle:
+                                    for line in handle.read().splitlines():
+                                        content.md().append(line)
+                            except (OSError, UnicodeDecodeError) as e:
+                                problem = str(e)
+                        if problem:
+                            self.diagnostics.add(
+                                'snippets',
+                                'cannot read snippet "{}": {}'.format(tag.snippet, problem),
+                                self.ctx.file, self.ctx.line
+                            )
+                            # Keep the omission visible in the output, so that an allowed
+                            # snippets category cannot publish an empty code block.
+                            content.md().append('MISSING SNIPPET: {}'.format(tag.snippet))
 
                 elif isinstance(tag, tags.AdmonitionTag):
                     heading = self.refs_to_markdown(tag.title or tag.type.title())

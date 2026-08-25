@@ -658,6 +658,15 @@ Renders a fenced code block with syntax highlighting in the documentation.  The 
 an optional argument that dictates the syntax highlighting language, which defaults to
 `lua` when not specified.
 
+A second optional argument names a file whose contents become the body of the code block,
+resolved relative to the `snippet_path` config property (or `--snippet-path` on the command
+line).  Both arguments are positional, so the language must be given first:
+`@code lua examples/hello.lua` inserts that file verbatim with Lua highlighting.
+
+A snippet that can't be read doesn't abort the run.  It's collected as a `snippets`
+diagnostic (see [Diagnostics](#diagnostics)) and the code block is rendered with a
+`MISSING SNIPPET` marker in place of the file's contents.
+
 Any commented lines indented within @code are included in the markdown code block. The
 code block terminates as soon as a line has less indentation than the first line under the
 `@code` tag.
@@ -869,25 +878,47 @@ C:\src\luadox> python luadox -c luadox.conf
 `luadox --help` will output usage instructions:
 
 ```
-usage: luadox [-h] [-c FILE] [-n NAME] [-o DIRNAME] [-m [ID=FILENAME [ID=FILENAME ...]]]
-              [--css FILE] [--favicon FILE] [--nofollow] [--encoding CODEC] [--version]
-              [FILE [FILE ...]]
+usage: luadox [-h] [-c FILE] [-n NAME] [--hometext TEXT] [-r TYPE] [-o PATH]
+              [--snippet-path PATH] [--allow-incomplete CATEGORIES] [-m [ID=FILENAME ...]]
+              [--css [FILE ...]] [--js [FILE ...]] [--favicon FILE] [--head-template FILE]
+              [--foot-template FILE] [--search-template FILE] [--sidebar-template FILE]
+              [--nofollow] [--encoding CODEC] [--version]
+              [[MODNAME=]FILE ...]
 
 positional arguments:
-  [MODNAME=]FILE        List of files to parse or directories to crawl
-                        with optional module name alias
+  [MODNAME=]FILE        List of files to parse or directories to crawl with optional
+                        module name alias
 
 optional arguments:
   -h, --help            show this help message and exit
   -c FILE, --config FILE
                         Luadox configuration file
   -n NAME, --name NAME  Project name (default Lua Project)
-  -o DIRNAME, --outdir DIRNAME
-                        Directory name for rendered files, created if necessary (default ./out)
-  -m [ID=FILENAME [ID=FILENAME ...]], --manual [ID=FILENAME [ID=FILENAME ...]]
+  --hometext TEXT       Home link text on the top left of every page
+  -r TYPE, --renderer TYPE
+                        How to render the parsed content: html, json, yaml (default: html)
+  -o PATH, --out PATH   Target path for rendered files, with directories created if
+                        necessary. For single-file renderers (e.g. json), this is treated
+                        as a file path if it ends with the appropriate extension (e.g.
+                        .json) (default: ./out/ for multi-file renderers, or
+                        luadox.<someext> for single-file renderers)
+  --snippet-path PATH   Path to custom snippets to be injected into generated
+                        documentation
+  --allow-incomplete CATEGORIES
+                        Comma-separated diagnostic categories (e.g. snippets) that may
+                        leave the rendered documentation incomplete without failing the
+                        run (default none)
+  -m [ID=FILENAME ...], --manual [ID=FILENAME ...]
                         Add manual page in the form id=filename.md
-  --css FILE            Custom CSS file
-  --favicon FILE        Path to favicon file
+  --css [FILE ...]      Custom CSS file(s) (html renderer)
+  --js [FILE ...]       Custom JS file(s) (html renderer)
+  --favicon FILE        Path to favicon file (html renderer)
+  --head-template FILE  Path to custom head template (html renderer)
+  --foot-template FILE  Path to custom foot template (html renderer)
+  --search-template FILE
+                        Path to custom search template (html renderer)
+  --sidebar-template FILE
+                        Path to custom sidebar template (html renderer)
   --nofollow            Disable following of require()'d files (default false)
   --encoding CODEC      Character set codec for input (default UTF-8)
   --version             show program's version number and exit
@@ -953,6 +984,14 @@ follow = true
 # Character encoding for input files, which defaults to the current system
 # locale.  Output files are always utf8.
 encoding = utf8
+# Directory holding the snippet files that @code, @example and @usage can
+# reference by name.
+snippet_path = ../examples
+# Diagnostic categories that are allowed to leave the rendered documentation
+# incomplete without failing the run, comma-separated.  Any problem in a
+# category not listed here is an error and LuaDox exits non-zero.  Empty by
+# default, which means every problem fails the run.
+allow_incomplete =
 
 [manual]
 # Custom manual pages in the form: id = filename.
@@ -986,6 +1025,40 @@ Link sections are optional. Each section takes these options:
 
 User-defined links currently can't be specified on the command line, they must
 be defined in the config file.
+
+## Diagnostics
+
+Some problems leave the rendered documentation incomplete without stopping LuaDox from
+producing output at all -- a `@code` snippet whose file is missing, for example.  Rather
+than aborting on the first one, LuaDox logs each problem as it's found, finishes rendering
+so the output can still be inspected, and prints a per-category summary at the end.
+
+If any category collected problems, LuaDox exits non-zero, so an incomplete build fails in
+CI.  To publish anyway, name the categories you're willing to accept, either in the config
+file:
+
+```ini
+[project]
+allow_incomplete = snippets
+```
+
+or on the command line:
+
+```bash
+$ luadox -c luadox.conf --allow-incomplete snippets
+```
+
+Accepted categories are reported as warnings instead of errors and no longer affect the
+exit code.  Unrecognized category names are ignored with a warning.
+
+The categories currently defined are:
+
+* `snippets`: a file referenced by `@code`, `@example` or `@usage` couldn't be read,
+   because it's missing, because `snippet_path` isn't configured, or because it isn't
+   decodable using the configured `encoding`.
+
+Only these categories feed the exit code.  Other problems LuaDox reports -- unresolved
+cross references, for instance -- are logged but don't affect it.
 
 ## Docker Image
 
