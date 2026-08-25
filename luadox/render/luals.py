@@ -369,6 +369,9 @@ class LuaLSRenderer(Renderer):
         out('')
 
         if env_globals:
+            # Config globals have no source location and resolve globally, so clear the
+            # parse context to keep a stale file:line off any diagnostic they produce.
+            self.ctx.update(ref=None, file=None, line=None)
             out('-- Globals injected into the script execution environment.')
             for name, typ in env_globals:
                 out('---@type {}'.format(self._map_type([typ])))
