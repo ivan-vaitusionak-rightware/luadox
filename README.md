@@ -1075,8 +1075,9 @@ Mappings of note:
 * `@class` becomes `---@class` (with `@inherits` rendered as the LuaLS `: Parent` clause),
   and methods/functions are emitted with their real source-level callable form so
   `Class:method`, `Class.func`, and bare global functions are all preserved.
-* `@table` collections (typically enumerations) become a table whose members are typed
-  fields; members without an explicit `@type` default to `integer`.
+* `@table` collections become a `---@class` whose members are typed fields, so the table
+  name resolves in a type position and its members can be accessed; members without an
+  explicit `@type` default to `any`.
 * Type names are translated to their LuaLS equivalents where applicable (`bool` →
   `boolean`, `int` → `integer`, `float`/`double` → `number`); other names, including
   class references, are passed through unchanged.
