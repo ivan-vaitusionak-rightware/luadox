@@ -512,6 +512,15 @@ class HTMLRenderer(Renderer):
                         out('<li class="class{}">{}<span>{}</span></li>'.format(self_class, prefix, html))
                     out('</ul>')
                     out('</div>')
+                # For a class with several direct parents, the linear hierarchy above shows
+                # only the first; list all of them so multiple inheritance is visible.
+                parents = colref.parents
+                if len(parents) > 1:
+                    links = ', '.join(self._types_to_html([ref.name]) for ref in parents)
+                    out('<div class="inherits">')
+                    out('<div class="heading">Inherits</div>')
+                    out('<div>{}</div>'.format(links))
+                    out('</div>')
 
             if colref.content:
                 out(self._content_to_html(colref.content))

@@ -117,12 +117,16 @@ class JSONRenderer(Renderer):
 
     def _render_classmod(self, topref: TopRef) -> Dict[str, Any]:
         hierarchy = None
+        parents = None
         if isinstance(topref, ClassRef):
             h = topref.hierarchy
             if len(h) > 1:
                 hierarchy = [{'name': ref.name, 'refid': ref.id} for ref in h]
+            p = topref.parents
+            if len(p) > 1:
+                parents = [{'name': ref.name, 'refid': ref.id} for ref in p]
 
-        out, sections = self._init_topref(topref, hierarchy=hierarchy)
+        out, sections = self._init_topref(topref, hierarchy=hierarchy, parents=parents)
 
         for colref in topref.collections:
             self.ctx.update(ref=colref)

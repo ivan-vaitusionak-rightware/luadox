@@ -397,8 +397,9 @@ from one or more other classes.  The rendered HTML for the class page will inclu
 showing the class hierarchy (following the first parent).
 
 The `@inherits` tag takes one or more parent class names.  Multiple parents can be given
-on a single tag or across several `@inherits` tags; renderers that support multiple
-inheritance use all of them, while the HTML/JSON class hierarchy follows the first.
+on a single tag or across several `@inherits` tags.  Every parent is listed (the HTML
+page shows an "Inherits" list and the JSON output a `parents` array), while the class
+hierarchy tree traces the first parent's lineage.
 
 
 ```lua
