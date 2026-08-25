@@ -878,25 +878,47 @@ C:\src\luadox> python luadox -c luadox.conf
 `luadox --help` will output usage instructions:
 
 ```
-usage: luadox [-h] [-c FILE] [-n NAME] [-o DIRNAME] [-m [ID=FILENAME [ID=FILENAME ...]]]
-              [--css FILE] [--favicon FILE] [--nofollow] [--encoding CODEC] [--version]
-              [FILE [FILE ...]]
+usage: luadox [-h] [-c FILE] [-n NAME] [--hometext TEXT] [-r TYPE] [-o PATH]
+              [--snippet-path PATH] [--allow-incomplete CATEGORIES] [-m [ID=FILENAME ...]]
+              [--css [FILE ...]] [--js [FILE ...]] [--favicon FILE] [--head-template FILE]
+              [--foot-template FILE] [--search-template FILE] [--sidebar-template FILE]
+              [--nofollow] [--encoding CODEC] [--version]
+              [[MODNAME=]FILE ...]
 
 positional arguments:
-  [MODNAME=]FILE        List of files to parse or directories to crawl
-                        with optional module name alias
+  [MODNAME=]FILE        List of files to parse or directories to crawl with optional
+                        module name alias
 
 optional arguments:
   -h, --help            show this help message and exit
   -c FILE, --config FILE
                         Luadox configuration file
   -n NAME, --name NAME  Project name (default Lua Project)
-  -o DIRNAME, --outdir DIRNAME
-                        Directory name for rendered files, created if necessary (default ./out)
-  -m [ID=FILENAME [ID=FILENAME ...]], --manual [ID=FILENAME [ID=FILENAME ...]]
+  --hometext TEXT       Home link text on the top left of every page
+  -r TYPE, --renderer TYPE
+                        How to render the parsed content: html, json, yaml (default: html)
+  -o PATH, --out PATH   Target path for rendered files, with directories created if
+                        necessary. For single-file renderers (e.g. json), this is treated
+                        as a file path if it ends with the appropriate extension (e.g.
+                        .json) (default: ./out/ for multi-file renderers, or
+                        luadox.<someext> for single-file renderers)
+  --snippet-path PATH   Path to custom snippets to be injected into generated
+                        documentation
+  --allow-incomplete CATEGORIES
+                        Comma-separated diagnostic categories (e.g. snippets) that may
+                        leave the rendered documentation incomplete without failing the
+                        run (default none)
+  -m [ID=FILENAME ...], --manual [ID=FILENAME ...]
                         Add manual page in the form id=filename.md
-  --css FILE            Custom CSS file
-  --favicon FILE        Path to favicon file
+  --css [FILE ...]      Custom CSS file(s) (html renderer)
+  --js [FILE ...]       Custom JS file(s) (html renderer)
+  --favicon FILE        Path to favicon file (html renderer)
+  --head-template FILE  Path to custom head template (html renderer)
+  --foot-template FILE  Path to custom foot template (html renderer)
+  --search-template FILE
+                        Path to custom search template (html renderer)
+  --sidebar-template FILE
+                        Path to custom sidebar template (html renderer)
   --nofollow            Disable following of require()'d files (default false)
   --encoding CODEC      Character set codec for input (default UTF-8)
   --version             show program's version number and exit
