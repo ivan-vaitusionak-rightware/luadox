@@ -243,57 +243,16 @@ class LuaLSRenderer(Renderer):
         out('')
         self._emit_members(out, col, DEFAULT_FIELD_TYPE)
 
-    def _doc_mixins(self, topref: ClassRef) -> List[str]:
-        """
-        Extracts additional parent classes named in a configured doc phrase.
-
-        Some APIs document runtime composition in prose, e.g. a class comment says
-        "Includes members from @{A}, @{B}, @{C}." -- naming mixin classes that don't
-        appear in the single-inheritance chain.
-        When 'mixin_doc_phrase' is configured, the cross references on the line carrying
-        that phrase are resolved to class names and treated as parents, so members
-        provided by those classes resolve transitively.
-        """
-        if not self._mixin_phrase:
-            return []
-        names: List[str] = []
-        for elem in topref.content:
-            if not isinstance(elem, Markdown):
-                continue
-            for line in elem.get().split('\n'):
-                if self._mixin_phrase not in line:
-                    continue
-                for refid in re.findall(r'luadox:([0-9a-fA-F]+)', line):
-                    ref = self.parser.refs_by_id.get(refid)
-                    if isinstance(ref, ClassRef):
-                        names.append(ref.name)
-        return names
-
     def _class_parents(self, topref: ClassRef) -> List[str]:
         """
-        Returns the LuaLS parent classes for a class, de-duplicated in order:
-
-        * its @inherits superclass;
-        * an optional mixin class <name><mixin_suffix> when configured and present
-          (a convention where a class Foo has a companion class Foo<mixin_suffix>
-          carrying members accessed as Foo.Member); and
-        * any classes named in the configured mixin_doc_phrase (see _doc_mixins), which
-          captures further mixins listed in prose.
+        Returns the LuaLS parent classes for a class -- its @inherits parents, in order
+        and de-duplicated.  A class may inherit from several parents (LuaLS renders them
+        as ``: A, B, C``); how those parents are chosen is up to the documentation.
         """
         parents: List[str] = []
-
-        def add(name: Optional[str]) -> None:
+        for name in topref.flags.get('inherits', []):
             if name and name != topref.name and name not in parents:
                 parents.append(name)
-
-        add(topref.flags.get('inherits'))
-        if self._mixin_suffix:
-            candidate = topref.name + self._mixin_suffix
-            if candidate in self._classnames:
-                add(candidate)
-        for name in self._doc_mixins(topref):
-            if name in self._classnames:
-                add(name)
         return parents
 
     def _emit_class(self, out: Callable[[str], None], topref: ClassRef) -> None:
@@ -346,12 +305,8 @@ class LuaLSRenderer(Renderer):
         Renders toprefs as a single LuaLS definition file at the given output path
         (or directory, in which case luadox.lua is written into it).
         """
-        # Optional [luals] config: a mixin suffix (see _class_parents) and a set of
-        # globals the host injects into the script environment, as `name:type` tokens
-        # (e.g. `globals = app:Application`).
-        self._classnames = {t.name for t in toprefs if isinstance(t, ClassRef)}
-        self._mixin_suffix = self.config.get('luals', 'mixin_suffix', fallback='') or ''
-        self._mixin_phrase = self.config.get('luals', 'mixin_doc_phrase', fallback='') or ''
+        # Optional [luals] config: a set of globals the host injects into the script
+        # environment, as `name:type` tokens (e.g. `globals = app:Application`).
         env_globals: List[Tuple[str, str]] = []
         for tok in files_str_to_list(self.config.get('luals', 'globals', fallback='')):
             name, _, typ = tok.partition(':')

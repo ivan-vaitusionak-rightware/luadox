@@ -282,7 +282,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@class` | Top-level collection | Like `@module` but for classes, which are also given their own separate documentation pages. See also `@inherits`.  | `@class xyz.SomeClass` |
 | `@section` |  Collection | Organizes documented elements such as fields, functions, and tables into a visually distinct group with a heading and arbitrary preamble. Sections can't be nested within other sections; a `@section` tag always creates a *new* section within a top-level collection. | `@section utils.files` |
 | `@table` | Nested collection | Declares a new collection containing only fields (not functions like other collections), and allows nesting where field names are fully qualified based on the encapsulating table(s). In most common cases, `@table` isn't needed and `@section` will suffice. | `@table constants` |
-| `@inherits` | `@class` modifier | Indicates that the current class is subclassed from another class. This influences how references are resolved (superclasses are searched) and the rendered class page includes a visual of the class hierarchy. | `@inherits xyz.BaseClass` |
+| `@inherits` | `@class` modifier | Indicates that the current class is subclassed from one or more other classes (repeat the tag or list several parents). This influences how references are resolved (superclasses are searched) and the rendered class page includes a visual of the class hierarchy. | `@inherits xyz.BaseClass` |
 | `@tparam` | Function modifier | Documents a typed parameter of the function definition that follows | `@tparam number\|nil w the width of the image, or nil to derive it from height and aspect` |
 | `@treturn` | Function modifier | Documents a return value of the function definition that follows | `@treturn bool true if successful, false otherwise` |
 | `@see` | Section modifier | Adds a styled "See also" line linking to one or more space-delimited references | `@see ref1 ref2` |
@@ -393,15 +393,20 @@ xyz.os = {
 ### `@inherits`
 
 Used within the context of a `@class` block to declare that the class has been derived
-from some other class.  The rendered HTML for the class page will include a tree showing
-the full class hierarchy.
+from one or more other classes.  The rendered HTML for the class page includes a tree
+showing the class hierarchy (following the first parent).
 
-The `@inherits` tag takes a single argument that is the name of the immediate superclass.
+The `@inherits` tag takes one or more parent class names.  Multiple parents can be given
+on a single tag or across several `@inherits` tags; the renderers that support multiple
+inheritance (e.g. `luals`, which emits `: A, B, C`) use all of them.
 
 
 ```lua
 --- @class xyz.Subclass
 -- @inherits xyz.BaseClass
+
+--- @class xyz.Mixed
+-- @inherits xyz.BaseClass xyz.OtherParent
 ```
 
 Unqualified references made within the class documentation (all sections, fields,
@@ -1072,7 +1077,7 @@ definitions, point its library setting at the output, for example in `.luarc.jso
 
 Mappings of note:
 
-* `@class` becomes `---@class` (with `@inherits` rendered as the LuaLS `: Parent` clause),
+* `@class` becomes `---@class` (with `@inherits` rendered as the LuaLS `: A, B, C` clause),
   and methods/functions are emitted with their real source-level callable form so
   `Class:method`, `Class.func`, and bare global functions are all preserved.
 * `@table` collections become a `---@class` whose members are typed fields, so the table
@@ -1083,10 +1088,9 @@ Mappings of note:
   class references, are passed through unchanged.
 * Manual pages have no API surface and are not included in the output.
 
-Scripts are often executed by the host application inside a prepared environment —
-with injected globals, and with members from one class merged onto another at runtime.
-An optional `[luals]` config section lets the generated definitions mirror that so real
-scripts type-check cleanly:
+Scripts are often executed by the host application inside a prepared environment with
+globals it injects.  An optional `[luals]` config section lets the generated definitions
+declare those so real scripts type-check cleanly:
 
 ```ini
 [luals]
@@ -1094,21 +1098,11 @@ scripts type-check cleanly:
 # (whitespace/newline separated).  Each is emitted as a typed global declaration so
 # references to it resolve.
 globals = app:Application
-
-# If set, a class Foo additionally inherits class Foo<mixin_suffix> when that class
-# exists.  This models a convention where a class Foo has a companion class
-# Foo<mixin_suffix> whose members are accessed as Foo.Member.
-mixin_suffix = Mixin
-
-# If set, any cross references on a documentation line containing this phrase are
-# added as extra parent classes.  This captures mixins that aren't in the single
-# inheritance chain -- classes a doc comment lists as
-# "Includes members from @{A}, @{B}, @{C}." -- so members they
-# provide resolve transitively (e.g. Widget.OnClick via a mixin in that phrase).
-mixin_doc_phrase = Includes members from
 ```
 
-All three options are optional; without a `[luals]` section the output is unchanged.
+The option is optional; without a `[luals]` section the output is unchanged.  Classes
+that compose members from several parents are handled generically by `@inherits`, which
+accepts multiple parents (see the `@inherits` section) and renders as `: A, B, C`.
 
 ## Diagnostics
 
