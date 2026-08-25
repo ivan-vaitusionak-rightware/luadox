@@ -408,9 +408,12 @@ class ClassRef(TopRef):
 
     @property
     def hierarchy(self) -> List['Reference']:
+        # A class may inherit from several parents; the linear hierarchy chain follows the
+        # first (primary) parent.  Renderers that support multiple parents read the full
+        # 'inherits' list directly.
         clsrefs: list[Reference] = [self]
         while clsrefs[0].flags.get('inherits'):
-            superclass = self.parser_refs.get(clsrefs[0].flags['inherits'])
+            superclass = self.parser_refs.get(clsrefs[0].flags['inherits'][0])
             if not superclass:
                 break
             else:

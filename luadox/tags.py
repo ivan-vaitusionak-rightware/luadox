@@ -87,7 +87,7 @@ class FullnamesTag(Tag):
 
 @dataclass
 class InheritsTag(Tag):
-    superclass: str
+    superclasses: List[str]
 
 @dataclass
 class MetaTag(Tag):
@@ -185,7 +185,7 @@ class TagParser:
         'alias': (AliasTag, {'name': str}),
         'compact': (CompactTag, {'elements': Optional[List[str]]}),
         'fullnames': (FullnamesTag, {}),
-        'inherits': (InheritsTag, {'superclass': str}),
+        'inherits': (InheritsTag, {'superclasses': List[str]}),
         'meta': (MetaTag, {'value': str}),
         'scope': (ScopeTag, {'name': str}),
         'rename': (RenameTag, {'name': str}),
@@ -313,7 +313,7 @@ class TagParser:
             # implicit @inherits.
             assert 'superclass' in kwargs, 'class name ends with colon but tag is missing parent class argument'
             yield ClassTag(name=kwargs['name'].rstrip(':'))
-            yield InheritsTag(superclass=kwargs['superclass'])
+            yield InheritsTag(superclasses=[kwargs['superclass']])
         else:
             yield tagcls(**kwargs)
 

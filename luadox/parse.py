@@ -432,7 +432,10 @@ class Parser:
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
-                        ref.flags['inherits'] = tag.superclass
+                        # Accumulate parents across repeated @inherits tags and a single
+                        # multi-parent tag, tolerating comma separators.
+                        parents = ref.flags.setdefault('inherits', [])
+                        parents.extend(name.strip(',') for name in tag.superclasses if name.strip(','))
                     elif isinstance(tag, tags.RenameTag):
                         ref.flags['rename'] = tag.name
                         ref.clear_cache()
