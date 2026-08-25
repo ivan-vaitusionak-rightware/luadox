@@ -1052,7 +1052,7 @@ written.
 
 The `luals` renderer emits a single [`---@meta`](https://luals.github.io/wiki/annotations/#meta)
 definition file using [LuaLS/EmmyLua annotations](https://luals.github.io/wiki/annotations/)
-(`---@class`, `---@type`, `---@param`, `---@return`, `---@alias`, ...).  This is useful
+(`---@class`, `---@type`, `---@param`, `---@return`, ...).  This is useful
 when the documented API has no Lua implementation of its own — for example a native API
 exposed to Lua by the host application — and you want editor features (completion, hover
 documentation, and signature help) for code that *uses* the API.
@@ -1096,9 +1096,8 @@ scripts type-check cleanly:
 globals = app:Application
 
 # If set, a class Foo additionally inherits class Foo<mixin_suffix> when that class
-# exists.  This models runtime composition such as a
-# createClass(Foo, super, FooMixin) helper, where the FooMixin table carries members
-# that are accessed as Foo.Member.
+# exists.  This models a convention where a class Foo has a companion class
+# Foo<mixin_suffix> whose members are accessed as Foo.Member.
 mixin_suffix = Mixin
 
 # If set, any cross references on a documentation line containing this phrase are
