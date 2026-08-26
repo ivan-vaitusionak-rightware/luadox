@@ -86,6 +86,10 @@ class FullnamesTag(Tag):
     pass
 
 @dataclass
+class DeprecatedTag(Tag):
+    desc: Optional[str] = None
+
+@dataclass
 class InheritsTag(Tag):
     superclasses: List[str]
 
@@ -185,6 +189,7 @@ class TagParser:
         'alias': (AliasTag, {'name': str}),
         'compact': (CompactTag, {'elements': Optional[List[str]]}),
         'fullnames': (FullnamesTag, {}),
+        'deprecated': (DeprecatedTag, {'desc': Optional[VarString]}),
         'inherits': (InheritsTag, {'superclasses': List[str]}),
         'meta': (MetaTag, {'value': str}),
         'scope': (ScopeTag, {'name': str}),

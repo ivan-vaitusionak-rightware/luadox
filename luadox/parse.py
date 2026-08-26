@@ -445,6 +445,8 @@ class Parser:
                         ref.flags['compact'] = tag.elements
                     elif isinstance(tag, tags.FullnamesTag):
                         ref.flags['fullnames'] = True
+                    elif isinstance(tag, tags.DeprecatedTag):
+                        ref.flags['deprecated'] = tag.desc or ''
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
