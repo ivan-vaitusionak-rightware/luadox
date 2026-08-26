@@ -409,11 +409,12 @@ FieldOfViewType = {
 }
 ```
 
-Renderers with an enumeration representation treat membership as closed.  A table
-marked `@enum` whose members don't all have literal values (or that contains
-functions) cannot be a closed enumeration, and renderers may fall back to treating it
-as an ordinary table.
-
+The tag is for renderers with an enumeration representation, which can treat
+membership as closed; the bundled renderers currently render the table like any
+other, with the members' literal values carried in the json/yaml output.  A table
+marked `@enum` whose members don't all have literal values (a member assigned a
+function, or a value spanning multiple lines, has none) cannot be a closed
+enumeration, and renderers fall back to treating it as an ordinary table.
 
 ### `@inherits`
 
