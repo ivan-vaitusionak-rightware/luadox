@@ -344,7 +344,8 @@ class Parser:
         else:
             modname = fname.replace('.lua', '')
         # Reference object for last section, defaulting to one for the module itself
-        modref = ModuleRef(self.refs, file=path, line=1, symbol=modname, implicit=True, level=-1)
+        modref = ModuleRef(self.refs, file=path, line=1, symbol=modname, implicit=True, level=-1,
+                           diagnostics=self.diagnostics)
         scopes: list[Reference] = [modref]
 
         # List of modules that were discovered via a 'require' statement in the given
@@ -433,7 +434,8 @@ class Parser:
                         # fact.
                         field = FieldRef(
                             self.refs, file=path, line=n, scopes=scopes[:],
-                            symbol=tag.name, collection=collection
+                            symbol=tag.name, collection=collection,
+                            diagnostics=self.diagnostics
                         )
                         field.raw_content.append((n, tag.desc, []))
                         self._add_reference(field, modref)
@@ -579,7 +581,8 @@ class Parser:
 
         # Create the top-level reference for the manual page.  Any lines in the markdown
         # before the first heading will accumulate in this topref's content.
-        topref = ManualRef(self.refs, file=path, line=1, symbol=name, level=-1)
+        topref = ManualRef(self.refs, file=path, line=1, symbol=name, level=-1,
+                           diagnostics=self.diagnostics)
         self._add_reference(topref)
 
         # We craft section symbols based on the heading, but there's nothing that requires
@@ -613,7 +616,8 @@ class Parser:
                         symbol = symbol + str(symbols[symbol] + 1)
                     symbols[symbol] = symbols.get(symbol, 0) + 1
 
-                    ref = SectionRef(self.refs, file=path, line=n, scopes=[topref], symbol=symbol)
+                    ref = SectionRef(self.refs, file=path, line=n, scopes=[topref], symbol=symbol,
+                                     diagnostics=self.diagnostics)
                     ref.heading = heading
                     ref.flags['level'] = level
 
