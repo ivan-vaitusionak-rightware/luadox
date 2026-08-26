@@ -90,6 +90,10 @@ class EnumTag(Tag):
     pass
 
 @dataclass
+class DeprecatedTag(Tag):
+    desc: Optional[str] = None
+
+@dataclass
 class InheritsTag(Tag):
     superclass: str
 
@@ -190,6 +194,7 @@ class TagParser:
         'compact': (CompactTag, {'elements': Optional[List[str]]}),
         'fullnames': (FullnamesTag, {}),
         'enum': (EnumTag, {}),
+        'deprecated': (DeprecatedTag, {'desc': Optional[VarString]}),
         'inherits': (InheritsTag, {'superclass': str}),
         'meta': (MetaTag, {'value': str}),
         'scope': (ScopeTag, {'name': str}),

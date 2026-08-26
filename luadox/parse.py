@@ -432,6 +432,8 @@ class Parser:
                         ref.flags['fullnames'] = True
                     elif isinstance(tag, tags.EnumTag):
                         ref.flags['enum'] = True
+                    elif isinstance(tag, tags.DeprecatedTag):
+                        ref.flags['deprecated'] = tag.desc or ''
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):

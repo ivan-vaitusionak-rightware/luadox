@@ -51,6 +51,21 @@ class Prerenderer:
         return toprefs
 
 
+
+    @staticmethod
+    def _apply_deprecated(ref: Reference) -> None:
+        """
+        Renders a @deprecated flag as a leading Deprecated admonition, so every
+        renderer shows it without knowing about the flag.  The flag itself stays for
+        renderers with a native representation (luals emits ---@deprecated).
+        """
+        if 'deprecated' not in ref.flags:
+            return
+        body = Content()
+        if ref.flags['deprecated']:
+            body.md().append(ref.flags['deprecated'])
+        ref.content.insert(0, Admonition('warning', 'Deprecated', body))
+
     def _do_classmod(self, topref: Union[ClassRef, ModuleRef]) -> None:
         has_content = False
         for colref in self.parser.get_collections(topref):
@@ -67,6 +82,7 @@ class Prerenderer:
 
             colref.heading = heading
             colref.content = content
+            self._apply_deprecated(colref)
             topref.collections.append(colref)
 
             functions = list(self.parser.get_elements_in_collection(FunctionRef, colref))
@@ -83,6 +99,7 @@ class Prerenderer:
                 ref.types = ref.flags.get('type', [])
                 ref.meta = ref.flags.get('meta')
                 ref.content = content
+                self._apply_deprecated(ref)
                 colref.fields.append(ref)
 
 
@@ -108,6 +125,7 @@ class Prerenderer:
                 ref.returns = returns
                 ref.meta = self.parser.refs_to_markdown(ref.flags['meta']) if 'meta' in ref.flags else ''
                 ref.content = content
+                self._apply_deprecated(ref)
                 colref.functions.append(ref)
 
         topref.userdata['empty'] = not has_content
