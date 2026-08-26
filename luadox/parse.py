@@ -188,11 +188,18 @@ class Parser:
     def _parse_field(self, line: str) -> Tuple[Union[str, None], Union[str, None]]:
         """
         Looks for a field assignment in the given raw line of code, and returns the
-        name of the field and the raw right-hand side of the assignment (with any
-        trailing comma removed), or a 2-tuple of Nones if no field was found.
+        name of the field and the complete literal value it is assigned, or None for
+        the value when the expression continues past this line (or is a function), so
+        a truncated fragment is never mistaken for a literal.
         """
-        def rhs(match: Match) -> Union[str, None]:
-            value = line[match.end():].strip().rstrip(',').strip()
+        def rhs(match: Match[str]) -> Union[str, None]:
+            # ',' and ';' are both legal table separators.
+            value = line[match.end():].strip().rstrip(',;').strip()
+            if value.count('(') != value.count(')') or                value.count('{') != value.count('}') or                value.count('[') != value.count(']') or                value.count('"') % 2 or value.count("'") % 2 or                value.endswith(('..', '=')) or value.startswith('function'):
+                # The expression continues on the next line (or the line was cut at a
+                # '--' inside a string, or the value is a function), so there is no
+                # usable literal here.
+                return None
             return value or None
         # Fields in the form [foo] = bar
         m = recache(r'''\[([^]]+)\] *=''').search(line)
@@ -447,7 +454,11 @@ class Parser:
                     elif isinstance(tag, tags.FullnamesTag):
                         ref.flags['fullnames'] = True
                     elif isinstance(tag, tags.EnumTag):
-                        ref.flags['enum'] = True
+                        if isinstance(ref, TableRef):
+                            ref.flags['enum'] = True
+                        else:
+                            log.warning('%s:%s: @enum applies to @table collections, ignoring on %s',
+                                        path, n, ref.type or 'comment block')
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
@@ -513,7 +524,9 @@ class Parser:
                     if ref is None:
                         continue
 
-                    for refcls in (FieldRef, FunctionRef):
+                    # The second parse result is the argument list for a function
+                    # and the assigned value for a field.
+                    for refcls, kwarg in ((FieldRef, 'value'), (FunctionRef, 'extra')):
                         name, extra = getattr(self, '_parse_' + refcls.type)(line)
                         scope = scopes[-1]
                         if refcls == FieldRef and isinstance(scope, ModuleRef) and scope.name == name:
@@ -527,14 +540,11 @@ class Parser:
                                     '{} defined before {} {} has terminated; separate with '
                                     'a blank line'.format(refcls.type, ref.type, ref.name),
                                     ref.file, ref.line)
-                            # The second parse result is the argument list for a
-                            # function and the assigned value for a field.
-                            kind = {'value': extra} if refcls is FieldRef else {'extra': extra}
                             ref = refcls.clone_from(ref,
                                 # Create a shallow copy of current scopes so subsequent modifications
                                 # don't retroactively apply.
                                 file=path, line=n, scopes=scopes[:], symbol=name,
-                                collection=collection, **kind
+                                collection=collection, **{kwarg: extra}
                             )
                             break
                     if self._check_disconnected_reference(ref):
