@@ -180,6 +180,8 @@ class LuaLSRenderer(Renderer):
         if ref.meta:
             lines.append('*{}*'.format(self._strip_links(ref.meta)))
         self._emit_doc(out, lines)
+        if 'deprecated' in ref.flags:
+            out('---@deprecated')
         typ = self._map_type(ref.types) if ref.types else default_type
         out('---@type {}'.format(typ))
         out('{} = nil'.format(self._field_lhs(ref)))
@@ -188,6 +190,8 @@ class LuaLSRenderer(Renderer):
     def _emit_function(self, out: Callable[[str], None], ref: FunctionRef) -> None:
         self.ctx.update(ref=ref)
         self._emit_doc(out, self._content_to_lines(ref.content))
+        if 'deprecated' in ref.flags:
+            out('---@deprecated')
         for name, types, doc in ref.params:
             if not types:
                 # The parameter exists in the signature but was never given a type,
