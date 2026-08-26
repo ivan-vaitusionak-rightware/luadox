@@ -411,12 +411,14 @@ class ClassRef(TopRef):
         # A class may inherit from several parents; the linear hierarchy chain follows the
         # first (primary) parent.  Use the parents property for the full direct parent set.
         clsrefs: list[Reference] = [self]
+        seen = {id(self)}
         while clsrefs[0].flags.get('inherits'):
             superclass = self.parser_refs.get(clsrefs[0].flags['inherits'][0])
-            if not superclass:
+            # Stop on an unresolved parent or an inheritance cycle.
+            if not superclass or id(superclass) in seen:
                 break
-            else:
-                clsrefs.insert(0, superclass)
+            seen.add(id(superclass))
+            clsrefs.insert(0, superclass)
         return clsrefs
 
     @property
@@ -429,7 +431,7 @@ class ClassRef(TopRef):
         refs: List['Reference'] = []
         for name in self.flags.get('inherits', []):
             ref = self.parser_refs.get(name)
-            if ref and name not in seen:
+            if ref and ref is not self and name not in seen:
                 seen.add(name)
                 refs.append(ref)
         return refs
