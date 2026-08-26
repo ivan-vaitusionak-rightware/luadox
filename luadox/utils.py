@@ -128,17 +128,19 @@ class Content(List[ContentFragment]):
         Returns the first sentence from the content.  If pop is True then the content
         is updated in-place to remove the sentence that was returned.
         """
-        if len(self) == 0:
-            return ''
-        e = self[0]
-        if not isinstance(e, Markdown):
+        # Skip leading non-Markdown fragments (e.g. a prerendered Deprecated
+        # admonition) so they can't hide the element's summary sentence.
+        for n, e in enumerate(self):
+            if isinstance(e, Markdown):
+                break
+        else:
             return ''
         first, remaining = get_first_sentence(e.get())
         if pop:
             if remaining:
-                self[0] = Markdown(remaining)
+                self[n] = Markdown(remaining)
             else:
-                self.pop(0)
+                self.pop(n)
         return first
 
     def md(self, postprocess: PostProcessFunc = None) -> Markdown:
