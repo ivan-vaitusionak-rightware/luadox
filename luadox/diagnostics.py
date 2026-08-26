@@ -44,9 +44,6 @@ class Diagnostics:
 
     CATEGORIES = frozenset({'snippets', 'references', 'conflicts', 'structure', 'untyped'})
 
-    # The collector of the current run, for reporting from code that has no path to the
-    # Parser (e.g. lazy Reference properties).  Set by Parser.
-    active: Optional['Diagnostics'] = None
 
     def __init__(self, allowed: Set[str]):
         self.allowed = allowed

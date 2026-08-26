@@ -83,6 +83,9 @@ class Reference:
 
     # Line number from the above file where the ref was declared
     line: Optional[int] = None
+    # The diagnostics collector of the run that created us, for reporting problems from
+    # lazy properties that have no path back to the Parser.
+    diagnostics: Optional[Diagnostics] = None
     # A stack of Reference objects this ref is contained within. Used to resolve names by
     # crawling up the scope stack.
     scopes: Optional[List['Reference']] = None
@@ -287,8 +290,8 @@ class Reference:
                 break
         else:
             message = 'could not determine which class or module {} belongs to'.format(self.name)
-            if Diagnostics.active:
-                Diagnostics.active.add('conflicts', message, self.file, self.line)
+            if self.diagnostics:
+                self.diagnostics.add('conflicts', message, self.file, self.line)
             else:
                 log.error('%s:%s: %s', self.file, self.line, message)
 

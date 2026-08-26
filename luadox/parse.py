@@ -126,7 +126,6 @@ class Parser:
         self.tag_parser = TagParser()
         # Problems that leave the rendered documentation incomplete.
         self.diagnostics = Diagnostics.from_config(config)
-        Diagnostics.active = self.diagnostics
 
 
     def _next_line(self, strip=True) -> Tuple[Union[int, None], Union[str, None]]:
@@ -381,7 +380,8 @@ class Parser:
                 # appropriate typed ref.  The Reference subclass instance is finally added
                 # when the comment block is terminated (either by a blank line or a line
                 # of code).
-                ref = Reference(self.refs, file=path, line=n, scopes=scopes)
+                ref = Reference(self.refs, file=path, line=n, scopes=scopes,
+                                diagnostics=self.diagnostics)
                 self.ctx.update(ref=ref)
             comment = line.startswith('--')
             if comment and ref:
