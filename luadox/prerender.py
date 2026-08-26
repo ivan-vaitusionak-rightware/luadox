@@ -111,7 +111,10 @@ class Prerenderer:
                     except KeyError:
                         params.append((param, [], Content()))
                         if paramsdict:
-                            log.warning('%s:%s: %s() missing @tparam for "%s" parameter', ref.file, ref.line, ref.name, param)
+                            self.parser.diagnostics.add(
+                                'untyped',
+                                '{}() missing @tparam for "{}" parameter'.format(ref.name, param),
+                                ref.file, ref.line)
 
                 ref.title = ref.display
                 ref.params = params

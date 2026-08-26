@@ -1064,11 +1064,20 @@ The categories currently defined are:
 * `snippets`: a file referenced by `@code`, `@example` or `@usage` couldn't be read,
    because it's missing, because `snippet_path` isn't configured, or because it isn't
    decodable using the configured `encoding`.
-* `references`: an `@inherits` parent names a class that isn't a documented class, so
-   the class's inheritance is left incomplete.
+* `references`: a name in the documentation doesn't resolve or is ambiguous -- an
+   inline `@{ref}`, an `@inherits` parent, an `@order` anchor, or an ambiguous
+   `@within`/collection reference -- so a link or relationship is dropped.
+* `conflicts`: two documented elements collide -- duplicate reference names, a class
+   or module name conflict, or an element whose owning class or module can't be
+   determined -- so one of them is dropped or orphaned.
+* `structure`: a documentation block is malformed -- an unrecognized or malformed tag,
+   a comment block not connected to any section, an element defined before the previous
+   block terminated, or an `@order` without an anchor -- so content is ignored or
+   attached to the wrong element.
+* `untyped`: a function parameter has no `@tparam` documenting it.
 
-Only these categories feed the exit code.  Other problems LuaDox reports -- unresolved
-inline cross references, for instance -- are logged but don't affect it.
+Only these categories feed the exit code.  Other problems LuaDox reports are logged
+but don't affect it.
 
 ## Docker Image
 

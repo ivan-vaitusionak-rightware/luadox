@@ -23,6 +23,7 @@ import re
 from dataclasses import dataclass, field, fields
 from typing import TypeVar, Optional, Union, List, Tuple, Dict, Any
 
+from .diagnostics import Diagnostics
 from .log import log
 from .tags import Tag
 from .utils import Content
@@ -285,7 +286,11 @@ class Reference:
                 self._topsym = s.name
                 break
         else:
-            log.error('%s:%s: could not determine which class or module %s belongs to', self.file, self.line, self.name)
+            message = 'could not determine which class or module {} belongs to'.format(self.name)
+            if Diagnostics.active:
+                Diagnostics.active.add('conflicts', message, self.file, self.line)
+            else:
+                log.error('%s:%s: %s', self.file, self.line, message)
 
 
 #
