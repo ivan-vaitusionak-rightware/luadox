@@ -233,6 +233,8 @@ class LuaLSRenderer(Renderer):
         lines = [self._strip_links(col.heading)] if col.heading else []
         lines.extend(self._content_to_lines(col.content))
         self._emit_doc(out, lines)
+        if col.flags.get('enum') and self._emit_enum_table(out, col):
+            return
         # Model the table as a class so its name resolves in a type position (e.g.
         # `@treturn SomeEnum`) and its members can be accessed.  Members default to the
         # same permissive 'any' as class fields: a @table is not necessarily an integer
@@ -242,6 +244,41 @@ class LuaLSRenderer(Renderer):
         out('{} = {{}}'.format(col.name))
         out('')
         self._emit_members(out, col, DEFAULT_FIELD_TYPE)
+
+    def _emit_enum_table(self, out: Callable[[str], None], col: CollectionRef) -> bool:
+        """
+        Emits an @enum table as a LuaLS ``---@enum`` with its members inside the table
+        literal, which is what makes the language server treat membership as closed --
+        a reference to an undefined member or a raw value in an enum-typed position is
+        reported.  Returns False without emitting when the table cannot be a closed
+        enum (a member without a literal value, or member functions), in which case the
+        caller falls back to the open class form; the mismatch is reported.
+        """
+        problems = ['function {}'.format(ref.symbol) for ref in col.functions]
+        problems += ['member "{}" has no literal value'.format(ref.symbol)
+                     for ref in col.fields if not ref.value]
+        if problems:
+            self.parser.diagnostics.add(
+                'types',
+                '@enum table {} cannot be a closed enum ({}); emitting an open class '
+                'instead'.format(col.name, '; '.join(problems)),
+                col.file, col.line)
+            return False
+        out('---@enum {}'.format(col.name))
+        out('{} = {{'.format(col.name))
+        for ref in col.fields:
+            self.ctx.update(ref=ref)
+            member_lines = self._content_to_lines(ref.content)
+            if ref.meta:
+                member_lines.append('*{}*'.format(self._strip_links(ref.meta)))
+            while member_lines and not member_lines[-1].strip():
+                member_lines.pop()
+            for line in member_lines:
+                out('    --- {}'.format(line) if line.strip() else '    ---')
+            out('    {} = {},'.format(ref.symbol, ref.value))
+        out('}')
+        out('')
+        return True
 
     def _doc_mixins(self, topref: ClassRef) -> List[str]:
         """
