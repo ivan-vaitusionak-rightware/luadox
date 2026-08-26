@@ -409,6 +409,8 @@ the first parent's lineage.
 
 --- @class xyz.Mixed
 -- @inherits xyz.BaseClass xyz.OtherParent
+
+--- @class xyz.Shorthand: xyz.BaseClass, xyz.OtherParent
 ```
 
 Unqualified references made within the class documentation (all sections, fields,

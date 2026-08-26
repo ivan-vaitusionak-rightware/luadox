@@ -177,7 +177,7 @@ class TagParser:
     # LuaDox's annotations.  See _get_tag_map().
     TAGMAP: TagMapType = {
         'module': (ModuleTag, {'name': str}),
-        'class': (ClassTag, {'name': str, 'superclass': Optional[str]}),
+        'class': (ClassTag, {'name': str, 'superclass': Optional[List[str]]}),
         'section': (SectionTag, {'name': str}),
         'table': (TableTag, {'name': str}),
         'within': (WithinTag, {'name': str}),
@@ -313,7 +313,7 @@ class TagParser:
             # implicit @inherits.
             assert 'superclass' in kwargs, 'class name ends with colon but tag is missing parent class argument'
             yield ClassTag(name=kwargs['name'].rstrip(':'))
-            yield InheritsTag(superclasses=[kwargs['superclass']])
+            yield InheritsTag(superclasses=kwargs['superclass'])
         else:
             yield tagcls(**kwargs)
 
