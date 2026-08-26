@@ -177,8 +177,10 @@ class HTMLRenderer(Renderer):
             if isinstance(elem, Markdown):
                 output.append(self._markdown_to_html(elem.get()))
             elif isinstance(elem, Admonition):
-                inner = self._content_to_html(elem.content)
-                output.append(f'<div class="admonition {elem.type}"><div class="title">{elem.title}</div><div class="body">{inner.strip()}\n</div></div>')
+                inner = self._content_to_html(elem.content).strip()
+                # An admonition with no body (e.g. a bare @deprecated) is just its title.
+                body = f'<div class="body">{inner}\n</div>' if inner else ''
+                output.append(f'<div class="admonition {elem.type}"><div class="title">{elem.title}</div>{body}</div>')
             elif isinstance(elem, SeeAlso):
                 refs = [self.parser.refs_by_id[id] for id in elem.refs]
                 md = ', '.join(self.parser.render_ref_markdown(ref) for ref in refs)
@@ -704,11 +706,17 @@ class HTMLRenderer(Renderer):
             if typ == SectionRef and not isinstance(ref.topref, ManualRef):
                 # Non-manual sections typically use the first sentence as the section
                 # title.  This heuristic uses the first sentence only if it's less than 80
-                # characters, otherwise falls back to the section title.
-                first, remaining = get_first_sentence(text)
+                # characters, otherwise falls back to the section title.  Leading
+                # admonitions (e.g. a prerendered Deprecated box) are not the summary,
+                # so they stay in the body text rather than becoming the title.
+                lead = Content()
+                body = Content(ref.content)
+                while body and isinstance(body[0], Admonition):
+                    lead.append(body.pop(0))
+                first, remaining = get_first_sentence(self._content_to_text(body))
                 if len(first) < 80:
                     title = first
-                    text = remaining
+                    text = (self._content_to_text(lead) + ' ' + remaining).strip()
             text = text.replace('"', '\\"').replace('\n', ' ')
             title = title.replace('"', '\\"').replace('\n', ' ')
             if typ == ModuleRef:
