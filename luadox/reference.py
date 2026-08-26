@@ -302,6 +302,10 @@ class FieldRef(Reference):
 
     # User-defined meta value (parsed from @meta via flags)
     meta: Optional[str] = None
+    # The raw right-hand side of the field's assignment (e.g. '0' for `XFov = 0`), when
+    # the field was parsed from an assignment.  Used by renderers that need the literal
+    # value, such as the luals renderer's @enum emission.
+    value: Optional[str] = None
     # Renderable display name that takes tags such as @fullnames into account
     title: str = ''
     # Allowed types for this field, which can be empty if no @type tag
