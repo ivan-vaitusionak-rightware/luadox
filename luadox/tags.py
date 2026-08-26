@@ -86,6 +86,10 @@ class FullnamesTag(Tag):
     pass
 
 @dataclass
+class EnumTag(Tag):
+    pass
+
+@dataclass
 class InheritsTag(Tag):
     superclass: str
 
@@ -185,6 +189,7 @@ class TagParser:
         'alias': (AliasTag, {'name': str}),
         'compact': (CompactTag, {'elements': Optional[List[str]]}),
         'fullnames': (FullnamesTag, {}),
+        'enum': (EnumTag, {}),
         'inherits': (InheritsTag, {'superclass': str}),
         'meta': (MetaTag, {'value': str}),
         'scope': (ScopeTag, {'name': str}),
