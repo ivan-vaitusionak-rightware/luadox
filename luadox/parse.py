@@ -185,21 +185,22 @@ class Parser:
         return name, arguments
 
 
-    def _parse_field(self, line: str) -> ParseFuncResult: 
+    def _parse_field(self, line: str) -> Tuple[Union[str, None], Union[str, None]]:
         """
         Looks for a field assignment in the given raw line of code, and returns the
-        name of the field, or a 2-tuple of Nones if no field was found.
-
-        A 2-tuple is returned to be consistent with other _parse_() functions,
-        but the second return value is always None.
+        name of the field and the raw right-hand side of the assignment (with any
+        trailing comma removed), or a 2-tuple of Nones if no field was found.
         """
+        def rhs(match: Match) -> Union[str, None]:
+            value = line[match.end():].strip().rstrip(',').strip()
+            return value or None
         # Fields in the form [foo] = bar
         m = recache(r'''\[([^]]+)\] *=''').search(line)
         if m:
-            return recache(r'''['"]''').sub('', m.group(1)), None
+            return recache(r'''['"]''').sub('', m.group(1)), rhs(m)
         m = recache(r'''\b([\S\.]+) *=''').search(line)
         if m:
-            return m.group(1), None
+            return m.group(1), rhs(m)
         else:
             return None, None
 
@@ -445,6 +446,8 @@ class Parser:
                         ref.flags['compact'] = tag.elements
                     elif isinstance(tag, tags.FullnamesTag):
                         ref.flags['fullnames'] = True
+                    elif isinstance(tag, tags.EnumTag):
+                        ref.flags['enum'] = True
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
@@ -524,11 +527,14 @@ class Parser:
                                     '{} defined before {} {} has terminated; separate with '
                                     'a blank line'.format(refcls.type, ref.type, ref.name),
                                     ref.file, ref.line)
+                            # The second parse result is the argument list for a
+                            # function and the assigned value for a field.
+                            kind = {'value': extra} if refcls is FieldRef else {'extra': extra}
                             ref = refcls.clone_from(ref,
                                 # Create a shallow copy of current scopes so subsequent modifications
                                 # don't retroactively apply.
                                 file=path, line=n, scopes=scopes[:], symbol=name,
-                                collection=collection, extra=extra
+                                collection=collection, **kind
                             )
                             break
                     if self._check_disconnected_reference(ref):
