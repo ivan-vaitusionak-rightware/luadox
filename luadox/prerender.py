@@ -110,11 +110,13 @@ class Prerenderer:
                         params.append((param, *paramsdict[param]))
                     except KeyError:
                         params.append((param, [], Content()))
-                        if paramsdict:
-                            self.parser.diagnostics.add(
-                                'untyped',
-                                '{}() missing @tparam for "{}" parameter'.format(ref.name, param),
-                                ref.file, ref.line)
+                        # Report regardless of whether any other parameter is documented:
+                        # gating only partially documented functions would reward deleting
+                        # the remaining @tparam lines.
+                        self.parser.diagnostics.add(
+                            'untyped',
+                            '{}() missing @tparam for "{}" parameter'.format(ref.name, param),
+                            ref.file, ref.line)
 
                 ref.title = ref.display
                 ref.params = params
