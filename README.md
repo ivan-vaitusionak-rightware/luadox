@@ -403,8 +403,11 @@ function Api:oldThing()
 end
 ```
 
-Every renderer shows a leading *Deprecated* admonition with the explanation.
-Renderers with a native deprecation representation also use the flag directly.
+The explanation is the rest of the tag's line.  Every renderer shows a leading
+*Deprecated* admonition with it; a renderer with a native deprecation representation
+can additionally use the flag directly.  When migrating existing hand-written
+"deprecated" warnings to the tag, migrate each element in one step -- an element
+carrying both spellings renders two admonitions.
 
 ### `@inherits`
 
