@@ -351,9 +351,11 @@ class FieldRef(Reference):
             self.symbol = symbol
             name = symbol
             display = display or symbol
-        elif '.' not in self.symbol:
+        elif '.' not in self.symbol and ':' not in self.symbol:
             # No @scope given, but we need to qualify the name based on the (unqualified)
-            # symbol and scope.
+            # symbol and scope.  A symbol qualified with the method-call colon
+            # (Class:method) is already scoped -- re-qualifying it would register the
+            # name as Class.Class.method, which no cross reference can target.
             name = f'{self.scope.symbol}.{self.symbol}'
             display = display or name
 
