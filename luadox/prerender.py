@@ -62,19 +62,21 @@ class Prerenderer:
 
 
 
-    @staticmethod
-    def _apply_deprecated(ref: Reference) -> None:
+    def _apply_deprecated(self, ref: Reference) -> None:
         """
         Renders a @deprecated flag as a leading Deprecated admonition, so every
         renderer shows it without knowing about the flag.  The flag itself stays for
-        renderers with a native representation (luals emits ---@deprecated).
+        renderers with a native deprecation representation.
         """
         if 'deprecated' not in ref.flags:
             return
-        body = Content()
+        # The same postprocessor parse_raw_content() gives @warning bodies, so @{ref}
+        # and `ref` in the explanation resolve to links.
+        body = Content(postprocess=self.parser.refs_to_markdown)
         if ref.flags['deprecated']:
             body.md().append(ref.flags['deprecated'])
         ref.content.insert(0, Admonition('warning', 'Deprecated', body))
+
 
     def _do_classmod(self, topref: Union[ClassRef, ModuleRef]) -> None:
         has_content = False
