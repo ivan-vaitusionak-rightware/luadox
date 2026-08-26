@@ -437,12 +437,14 @@ class ClassRef(TopRef):
         The class's direct parents -- every class named in @inherits, in order and
         de-duplicated -- resolved to their references, skipping any that don't resolve.
         """
-        seen: set[str] = set()
+        seen: set[int] = set()
         refs: List['Reference'] = []
         for name in self.flags.get('inherits', []):
             ref = self.parser_refs.get(name)
-            if ref and ref is not self and name not in seen:
-                seen.add(name)
+            # De-duplicate on the resolved reference rather than the name: @alias means
+            # two different names can resolve to the same class.
+            if ref and ref is not self and id(ref) not in seen:
+                seen.add(id(ref))
                 refs.append(ref)
         return refs
 
