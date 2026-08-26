@@ -283,6 +283,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@section` |  Collection | Organizes documented elements such as fields, functions, and tables into a visually distinct group with a heading and arbitrary preamble. Sections can't be nested within other sections; a `@section` tag always creates a *new* section within a top-level collection. | `@section utils.files` |
 | `@table` | Nested collection | Declares a new collection containing only fields (not functions like other collections), and allows nesting where field names are fully qualified based on the encapsulating table(s). In most common cases, `@table` isn't needed and `@section` will suffice. | `@table constants` |
 | `@enum` | `@table` modifier | Marks the table as a closed enumeration whose members are exactly the fields assigned in its table constructor. Renderers that understand enumerations (e.g. `luals`) treat membership as closed; every member must be assigned a literal value. | `@enum` |
+| `@deprecated` | Element modifier | Marks the element as deprecated, with an optional explanation. Renders as a leading Deprecated admonition, and renderers with a native representation use it (the `luals` renderer emits `---@deprecated`, so editors strike the API through and the language server reports uses). | `@deprecated Use newThing instead.` |
 | `@inherits` | `@class` modifier | Indicates that the current class is subclassed from another class. This influences how references are resolved (superclasses are searched) and the rendered class page includes a visual of the class hierarchy. | `@inherits xyz.BaseClass` |
 | `@tparam` | Function modifier | Documents a typed parameter of the function definition that follows | `@tparam number\|nil w the width of the image, or nil to derive it from height and aspect` |
 | `@treturn` | Function modifier | Documents a return value of the function definition that follows | `@treturn bool true if successful, false otherwise` |
@@ -414,6 +415,23 @@ as a LuaLS `---@enum`, so the language server reports references to undefined me
 and rejects raw values where the enumeration type is expected.  A table marked `@enum`
 whose members don't all have literal values (or that contains functions) cannot be a
 closed enumeration; it is reported and rendered as an open class instead.
+
+
+### `@deprecated`
+
+Marks the documented element as deprecated, with an optional explanation that may
+contain references:
+
+```lua
+--- Old way to do the thing.
+--- @deprecated Use @{newThing} instead.
+function Api:oldThing()
+end
+```
+
+Every renderer shows a leading *Deprecated* admonition with the explanation.  The
+`luals` renderer additionally emits LuaLS's native `---@deprecated`, so editors render
+uses struck through and the language server reports them.
 
 
 ### `@inherits`
@@ -1108,6 +1126,7 @@ Mappings of note:
 * Type names are translated to their LuaLS equivalents where applicable (`bool` →
   `boolean`, `int` → `integer`, `float`/`double` → `number`); other names, including
   class references, are passed through unchanged.
+* `@deprecated` elements carry LuaLS's native `---@deprecated` annotation.
 * Manual pages have no API surface and are not included in the output.
 
 Scripts are often executed by the host application inside a prepared environment —
