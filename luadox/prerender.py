@@ -47,14 +47,15 @@ class Prerenderer:
             elif isinstance(ref, ManualRef):
                 self._do_manual(ref)
             if isinstance(ref, ClassRef):
-                # Warn about @inherits parents that don't resolve to a documented class,
-                # rather than silently dropping them (consistent with unresolved inline
-                # references).
+                # An @inherits parent that resolves to no documented class leaves the
+                # class's inheritance incomplete; report it through the diagnostics
+                # collector so it feeds the exit code rather than being dropped silently.
                 for name in ref.flags.get('inherits', []):
                     if not self.parser.refs.get(name):
-                        self.ctx.update(ref=ref)
-                        log.warning('%s:%s: @inherits parent "%s" could not be resolved',
-                                    self.ctx.file, self.ctx.line, name)
+                        self.parser.diagnostics.add(
+                            'references',
+                            '@inherits parent "{}" could not be resolved'.format(name),
+                            ref.file, ref.line)
             toprefs.append(ref)
         toprefs.sort(key=lambda ref: (ref.type, ref.symbol))
         return toprefs

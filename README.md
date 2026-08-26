@@ -1064,9 +1064,11 @@ The categories currently defined are:
 * `snippets`: a file referenced by `@code`, `@example` or `@usage` couldn't be read,
    because it's missing, because `snippet_path` isn't configured, or because it isn't
    decodable using the configured `encoding`.
+* `references`: an `@inherits` parent names a class that isn't a documented class, so
+   the class's inheritance is left incomplete.
 
 Only these categories feed the exit code.  Other problems LuaDox reports -- unresolved
-cross references, for instance -- are logged but don't affect it.
+inline cross references, for instance -- are logged but don't affect it.
 
 ## Docker Image
 
