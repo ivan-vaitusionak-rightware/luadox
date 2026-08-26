@@ -887,7 +887,7 @@ class Parser:
         params: dict[str, tuple[list[str], Content]] = {}
         returns: list[tuple[list[str], Content]] = []
         # These tags take nested content
-        content_tags = tags.AdmonitionTag, tags.ParamTag, tags.ReturnTag
+        content_tags = tags.AdmonitionTag, tags.DeprecatedTag, tags.ParamTag, tags.ReturnTag
 
         # We pass _refs_to_markdown() as a postprocessor for the Content (here as well as
         # below) which will resolve all references when the renderer finally fetches the
@@ -986,6 +986,14 @@ class Parser:
                     heading = self.refs_to_markdown(tag.title or tag.type.title())
                     content.append(Admonition(tag.type, heading, tagcontent))
                     dedent = None
+                elif isinstance(tag, tags.DeprecatedTag):
+                    # Content-side handling for pages whose tags aren't pre-parsed
+                    # (manual pages); elsewhere the flag is set at parse time and the
+                    # prerenderer renders the admonition.
+                    if tag.desc:
+                        tagcontent.md().append(tag.desc)
+                    content.append(Admonition('warning', 'Deprecated', tagcontent))
+                    dedent = None
                 elif isinstance(tag, tags.ParamTag):
                     if tag.desc:
                         tagcontent.md().append(tag.desc)
@@ -1000,7 +1008,7 @@ class Parser:
                 else:
                     self.diagnostics.add(
                         'structure',
-                        'unknown tag @{} or missing arguments'.format(tag),
+                        'unknown tag @{} or missing arguments'.format(tag.type),
                         self.ctx.file, n)
 
             elif line is not None:
