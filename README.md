@@ -282,6 +282,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@class` | Top-level collection | Like `@module` but for classes, which are also given their own separate documentation pages. See also `@inherits`.  | `@class xyz.SomeClass` |
 | `@section` |  Collection | Organizes documented elements such as fields, functions, and tables into a visually distinct group with a heading and arbitrary preamble. Sections can't be nested within other sections; a `@section` tag always creates a *new* section within a top-level collection. | `@section utils.files` |
 | `@table` | Nested collection | Declares a new collection containing only fields (not functions like other collections), and allows nesting where field names are fully qualified based on the encapsulating table(s). In most common cases, `@table` isn't needed and `@section` will suffice. | `@table constants` |
+| `@deprecated` | Element modifier | Marks the element as deprecated, with an optional explanation. Renders as a leading Deprecated admonition; renderers with a native deprecation representation also use the flag directly. | `@deprecated Use newThing instead.` |
 | `@inherits` | `@class` modifier | Indicates that the current class is subclassed from one or more other classes (repeat the tag or list several parents). The first parent's lineage is searched when resolving references, all parents are listed on the class page, and the hierarchy is shown as a tree. | `@inherits xyz.BaseClass` |
 | `@tparam` | Function modifier | Documents a typed parameter of the function definition that follows | `@tparam number\|nil w the width of the image, or nil to derive it from height and aspect` |
 | `@treturn` | Function modifier | Documents a return value of the function definition that follows | `@treturn bool true if successful, false otherwise` |
@@ -389,6 +390,21 @@ xyz.os = {
     linux = (_os == 'lin' or _os == 'oth'),
 }
 ```
+
+### `@deprecated`
+
+Marks the documented element as deprecated, with an optional explanation that may
+contain references:
+
+```lua
+--- Old way to do the thing.
+--- @deprecated Use @{newThing} instead.
+function Api:oldThing()
+end
+```
+
+Every renderer shows a leading *Deprecated* admonition with the explanation.
+Renderers with a native deprecation representation also use the flag directly.
 
 ### `@inherits`
 
