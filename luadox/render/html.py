@@ -163,6 +163,15 @@ class HTMLRenderer(Renderer):
         """
         return '<a class="permalink" href="#{}" title="Permalink to this definition">¶</a>'.format(id)
 
+    def _enum_value(self, colref: Reference, ref: Reference) -> str:
+        """
+        Returns the ' = <value>' HTML suffix for a member of an @enum table, or an
+        empty string when the collection is not an enum or no literal was captured.
+        """
+        if colref.flags.get('enum') and ref.value:
+            return ' = <span class="value">{}</span>'.format(ref.value)
+        return ''
+
     def _markdown_to_html(self, md: str) -> str:
         """
         Renders the given markdown as HTML and returns the result.
@@ -564,10 +573,10 @@ class HTMLRenderer(Renderer):
                     for ref in colref.fields:
                         out('<tr>')
                         if not fields_compact:
-                            out('<td class="name"><a href="#{}"><var>{}</var></a></td>'.format(ref.name, ref.title))
+                            out('<td class="name"><a href="#{}"><var>{}</var></a>{}</td>'.format(ref.name, ref.title, self._enum_value(colref, ref)))
                         else:
                             link = self._permalink(ref.name)
-                            out('<td class="name"><var id="{}">{}</var>{}</td>'.format(ref.name, ref.title, link))
+                            out('<td class="name"><var id="{}">{}</var>{}{}</td>'.format(ref.name, ref.title, self._enum_value(colref, ref), link))
                         nmeta = fields_meta_columns
                         if ref.types:
                             types = self._types_to_html(ref.types)
@@ -632,7 +641,7 @@ class HTMLRenderer(Renderer):
                 out('<dl class="fields">')
                 for ref in colref.fields:
                     out('<dt id="{}">'.format(ref.name))
-                    out('<span class="icon"></span><var>{}</var>'.format(ref.display))
+                    out('<span class="icon"></span><var>{}</var>{}'.format(ref.display, self._enum_value(colref, ref)))
                     if ref.types:
                         types = self._types_to_html(ref.types)
                         out('<span class="tag type">{}</span>'.format(types))

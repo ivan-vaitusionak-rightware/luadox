@@ -285,6 +285,12 @@ var, a code {
     color: #444;
 }
 
+span.value {
+    font-family: "Consolas", "Deja Vu Sans Mono", "Bitstream Vera Sans Mono", monospace;
+    font-weight: normal;
+    color: #666;
+}
+
 div.see {
     padding-top: 0.5em;
 }
