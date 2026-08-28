@@ -23,6 +23,7 @@ import re
 from dataclasses import dataclass, field, fields
 from typing import TypeVar, Optional, Union, List, Tuple, Dict, Any
 
+from .diagnostics import Diagnostics
 from .log import log
 from .tags import Tag
 from .utils import Content
@@ -82,6 +83,9 @@ class Reference:
 
     # Line number from the above file where the ref was declared
     line: Optional[int] = None
+    # The diagnostics collector of the run that created us, for reporting problems from
+    # lazy properties that have no path back to the Parser.
+    diagnostics: Optional[Diagnostics] = None
     # A stack of Reference objects this ref is contained within. Used to resolve names by
     # crawling up the scope stack.
     scopes: Optional[List['Reference']] = None
@@ -285,7 +289,11 @@ class Reference:
                 self._topsym = s.name
                 break
         else:
-            log.error('%s:%s: could not determine which class or module %s belongs to', self.file, self.line, self.name)
+            message = 'could not determine which class or module {} belongs to'.format(self.name)
+            if self.diagnostics:
+                self.diagnostics.add('conflicts', message, self.file, self.line)
+            else:
+                log.error('%s:%s: %s', self.file, self.line, message)
 
 
 #
@@ -346,9 +354,11 @@ class FieldRef(Reference):
             self.symbol = symbol
             name = symbol
             display = display or symbol
-        elif '.' not in self.symbol:
+        elif '.' not in self.symbol and ':' not in self.symbol:
             # No @scope given, but we need to qualify the name based on the (unqualified)
-            # symbol and scope.
+            # symbol and scope.  A symbol qualified with the method-call colon
+            # (Class:method) is already scoped -- re-qualifying it would register the
+            # name as Class.Class.method, which no cross reference can target.
             name = f'{self.scope.symbol}.{self.symbol}'
             display = display or name
 
@@ -408,14 +418,35 @@ class ClassRef(TopRef):
 
     @property
     def hierarchy(self) -> List['Reference']:
+        # A class may inherit from several parents; the linear hierarchy chain follows the
+        # first (primary) parent.  Use the parents property for the full direct parent set.
         clsrefs: list[Reference] = [self]
+        seen = {id(self)}
         while clsrefs[0].flags.get('inherits'):
-            superclass = self.parser_refs.get(clsrefs[0].flags['inherits'])
-            if not superclass:
+            superclass = self.parser_refs.get(clsrefs[0].flags['inherits'][0])
+            # Stop on an unresolved parent or an inheritance cycle.
+            if not superclass or id(superclass) in seen:
                 break
-            else:
-                clsrefs.insert(0, superclass)
+            seen.add(id(superclass))
+            clsrefs.insert(0, superclass)
         return clsrefs
+
+    @property
+    def parents(self) -> List['Reference']:
+        """
+        The class's direct parents -- every class named in @inherits, in order and
+        de-duplicated -- resolved to their references, skipping any that don't resolve.
+        """
+        seen: set[int] = set()
+        refs: List['Reference'] = []
+        for name in self.flags.get('inherits', []):
+            ref = self.parser_refs.get(name)
+            # De-duplicate on the resolved reference rather than the name: @alias means
+            # two different names can resolve to the same class.
+            if ref and ref is not self and id(ref) not in seen:
+                seen.add(id(ref))
+                refs.append(ref)
+        return refs
 
 
 @dataclass

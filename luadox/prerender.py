@@ -46,6 +46,16 @@ class Prerenderer:
                 self._do_classmod(ref)
             elif isinstance(ref, ManualRef):
                 self._do_manual(ref)
+            if isinstance(ref, ClassRef):
+                # An @inherits parent that resolves to no documented class leaves the
+                # class's inheritance incomplete; report it through the diagnostics
+                # collector so it feeds the exit code rather than being dropped silently.
+                for name in ref.flags.get('inherits', []):
+                    if not self.parser.refs.get(name):
+                        self.parser.diagnostics.add(
+                            'references',
+                            '@inherits parent "{}" could not be resolved'.format(name),
+                            ref.file, ref.line)
             toprefs.append(ref)
         toprefs.sort(key=lambda ref: (ref.type, ref.symbol))
         return toprefs
@@ -100,8 +110,13 @@ class Prerenderer:
                         params.append((param, *paramsdict[param]))
                     except KeyError:
                         params.append((param, [], Content()))
-                        if paramsdict:
-                            log.warning('%s:%s: %s() missing @tparam for "%s" parameter', ref.file, ref.line, ref.name, param)
+                        # Report regardless of whether any other parameter is documented:
+                        # gating only partially documented functions would reward deleting
+                        # the remaining @tparam lines.
+                        self.parser.diagnostics.add(
+                            'untyped',
+                            '{}() missing @tparam for "{}" parameter'.format(ref.name, param),
+                            ref.file, ref.line)
 
                 ref.title = ref.display
                 ref.params = params

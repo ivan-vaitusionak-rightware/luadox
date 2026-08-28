@@ -242,6 +242,26 @@ div.hierarchy li.self span {
     background-color: #fbedc3;
 }
 
+div.inherits {
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
+div.inherits div.heading {
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+div.inherits > div:not(.heading) {
+    font-family: "Consolas", "Deja Vu Sans Mono", "Bitstream Vera Sans Mono", monospace;
+    font-size: 0.95em;
+    letter-spacing: 0.01em;
+}
+
+div.inherits em {
+    font-style: normal;
+}
+
 h1,
 div.section h2.class,
 div.section h2.module {

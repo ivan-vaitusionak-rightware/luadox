@@ -42,7 +42,8 @@ class Diagnostics:
     line), which downgrades its reports to warnings.
     """
 
-    CATEGORIES = frozenset({'snippets'})
+    CATEGORIES = frozenset({'snippets', 'references', 'conflicts', 'structure', 'untyped'})
+
 
     def __init__(self, allowed: Set[str]):
         self.allowed = allowed

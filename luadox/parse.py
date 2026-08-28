@@ -175,7 +175,8 @@ class Parser:
             # The function signature is spread across multiple lines
             n, nextline = self._next_line()
             if nextline is None:
-                log.error('%s:%s: function definition is truncated', self.ctx.file, n)
+                self.diagnostics.add(
+                    'structure', 'function definition is truncated', self.ctx.file, n)
                 return None, None
             m = recache(r'''([^)]*)(\))?''').search(nextline)
             if m:
@@ -220,13 +221,19 @@ class Parser:
         if ref.userdata.get('added'):
             # Reference was already added. This also indicates a bug, but it's not fatal
             # so just log the error.
-            log.error('%s:%s: reference "%s" with the same name already exists', ref.file, ref.line, ref.name)
+            self.diagnostics.add(
+                'conflicts',
+                'reference "{}" with the same name already exists'.format(ref.name),
+                ref.file, ref.line)
             return
 
         # Register the class, module, or manual page as a top-level symbol
         if isinstance(ref, TopRef):
             if ref.name in self.topsyms:
-                log.error('%s:%s: %s conflicts with another class or module', ref.file, ref.line, ref.name)
+                self.diagnostics.add(
+                    'conflicts',
+                    '{} conflicts with another class or module'.format(ref.name),
+                    ref.file, ref.line)
             else:
                 self.topsyms[ref.name] = ref
         else:
@@ -277,8 +284,11 @@ class Parser:
             if not conflict and not isinstance(ref, SectionRef):
                 conflict = self.refs[ref.name]
             if conflict and conflict != ref:
-                log.error('%s:%s: %s "%s" conflicts with %s name at %s:%s',
-                          ref.file, ref.line, ref.type, ref.name, conflict.type, conflict.file, conflict.line)
+                self.diagnostics.add(
+                    'conflicts',
+                    '{} "{}" conflicts with {} name at {}:{}'.format(
+                        ref.type, ref.name, conflict.type, conflict.file, conflict.line),
+                    ref.file, ref.line)
         else:
             self.refs[ref.name] = ref
             if ref.id in self.refs_by_id:
@@ -299,7 +309,10 @@ class Parser:
             # somewhat pointlessly.
             content = ''.join(line.lstrip('-').strip() for (_, line, _) in ref.raw_content)
             if content:
-                log.warning('%s:%s: comment block is not connected with any section, ignoring', ref.file, ref.line)
+                self.diagnostics.add(
+                    'structure',
+                    'comment block is not connected with any section, ignoring',
+                    ref.file, ref.line)
         return False
 
     def parse_source(self, f: IO[str]) -> List[str]:
@@ -331,7 +344,8 @@ class Parser:
         else:
             modname = fname.replace('.lua', '')
         # Reference object for last section, defaulting to one for the module itself
-        modref = ModuleRef(self.refs, file=path, line=1, symbol=modname, implicit=True, level=-1)
+        modref = ModuleRef(self.refs, file=path, line=1, symbol=modname, implicit=True, level=-1,
+                           diagnostics=self.diagnostics)
         scopes: list[Reference] = [modref]
 
         # List of modules that were discovered via a 'require' statement in the given
@@ -367,7 +381,8 @@ class Parser:
                 # appropriate typed ref.  The Reference subclass instance is finally added
                 # when the comment block is terminated (either by a blank line or a line
                 # of code).
-                ref = Reference(self.refs, file=path, line=n, scopes=scopes)
+                ref = Reference(self.refs, file=path, line=n, scopes=scopes,
+                                diagnostics=self.diagnostics)
                 self.ctx.update(ref=ref)
             comment = line.startswith('--')
             if comment and ref:
@@ -419,7 +434,8 @@ class Parser:
                         # fact.
                         field = FieldRef(
                             self.refs, file=path, line=n, scopes=scopes[:],
-                            symbol=tag.name, collection=collection
+                            symbol=tag.name, collection=collection,
+                            diagnostics=self.diagnostics
                         )
                         field.raw_content.append((n, tag.desc, []))
                         self._add_reference(field, modref)
@@ -432,7 +448,11 @@ class Parser:
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
-                        ref.flags['inherits'] = tag.superclass
+                        # Accumulate parents across repeated @inherits tags and a single
+                        # multi-parent tag, splitting on commas and dropping empties.
+                        parents = ref.flags.setdefault('inherits', [])
+                        parents.extend(part for name in tag.superclasses
+                                       for part in name.split(',') if part)
                     elif isinstance(tag, tags.RenameTag):
                         ref.flags['rename'] = tag.name
                         ref.clear_cache()
@@ -448,7 +468,10 @@ class Parser:
                     elif isinstance(tag, tags.OrderTag):
                         ref.flags['order'] = tag
                     elif isinstance(tag, tags.UnrecognizedTag):
-                        log.warning('%s:%s: unrecognized tag @%s, ignoring', path, n, tag.name)
+                        self.diagnostics.add(
+                            'structure',
+                            'unrecognized tag @{}, ignoring'.format(tag.name),
+                            path, n)
                     elif not isinstance(tag, tags.SectionTag):
                         unprocessed_tags.append(tag)
                         ntags -= 1
@@ -496,10 +519,11 @@ class Parser:
                             pass
                         elif name:
                             if ref.symbol:
-                                log.error(
-                                    '%s:%s: %s defined before %s %s has terminated; separate with a blank line',
-                                    ref.file, ref.line, refcls.type, ref.type, ref.name
-                                )
+                                self.diagnostics.add(
+                                    'structure',
+                                    '{} defined before {} {} has terminated; separate with '
+                                    'a blank line'.format(refcls.type, ref.type, ref.name),
+                                    ref.file, ref.line)
                             ref = refcls.clone_from(ref,
                                 # Create a shallow copy of current scopes so subsequent modifications
                                 # don't retroactively apply.
@@ -557,7 +581,8 @@ class Parser:
 
         # Create the top-level reference for the manual page.  Any lines in the markdown
         # before the first heading will accumulate in this topref's content.
-        topref = ManualRef(self.refs, file=path, line=1, symbol=name, level=-1)
+        topref = ManualRef(self.refs, file=path, line=1, symbol=name, level=-1,
+                           diagnostics=self.diagnostics)
         self._add_reference(topref)
 
         # We craft section symbols based on the heading, but there's nothing that requires
@@ -591,7 +616,8 @@ class Parser:
                         symbol = symbol + str(symbols[symbol] + 1)
                     symbols[symbol] = symbols.get(symbol, 0) + 1
 
-                    ref = SectionRef(self.refs, file=path, line=n, scopes=[topref], symbol=symbol)
+                    ref = SectionRef(self.refs, file=path, line=n, scopes=[topref], symbol=symbol,
+                                     diagnostics=self.diagnostics)
                     ref.heading = heading
                     ref.flags['level'] = level
 
@@ -659,7 +685,11 @@ class Parser:
                     if ref.within in collections:
                         candidates.add(topsym)
                 if len(candidates) > 1:
-                    log.error('%s is @within %s which is ambiguous (in %s)', name, ref.within, ', '.join(candidates))
+                    self.diagnostics.add(
+                        'references',
+                        '{} is @within {} which is ambiguous (in {})'.format(
+                            name, ref.within, ', '.join(candidates)),
+                        ref.file, ref.line)
                 else:
                     # Remember that this ref is @within a different topsym
                     ref.userdata['within_topsym'] = candidates.pop()
@@ -699,7 +729,10 @@ class Parser:
                     ordered.remove(ref)
                     ordered.append(ref)
                 else:
-                    log.error('%s:~%s @order %s requires an anchor reference', ref.file, ref.line, order.whence)
+                    self.diagnostics.add(
+                        'structure',
+                        '@order {} requires an anchor reference'.format(order.whence),
+                        ref.file, ref.line)
             else:
                 for n, other in enumerate(ordered):
                     if other.symbol == order.anchor:
@@ -711,7 +744,10 @@ class Parser:
                             ordered.insert(n+1, ref)
                         break
                 else:
-                    log.error('%s:~%s unknown @order anchor reference %s', ref.file, ref.line, order.anchor)
+                    self.diagnostics.add(
+                        'references',
+                        'unknown @order anchor reference {}'.format(order.anchor),
+                        ref.file, ref.line)
         return first + ordered + last
 
 
@@ -750,11 +786,12 @@ class Parser:
             # We have multiple top-level refs that have a collection with the same name
             # but none of them are the same topref as the given colref.  So we can't
             # reliably resolve the element list for this collection.
-            log.warning(
-                'collection "%s" referenced by %s is ambiguous as it exists '
-                'in multiple classes or modules (%s) but %s lacks documented %ss',
-                colref.name, topsym, ', '.join(found), topsym, typ.type
-            )
+            self.diagnostics.add(
+                'references',
+                'collection "{}" referenced by {} is ambiguous as it exists in multiple '
+                'classes or modules ({}) but {} lacks documented {}s'.format(
+                    colref.name, topsym, ', '.join(found), topsym, typ.type),
+                colref.file, colref.line)
 
         elems: list[RefT] = []
         for ref in self.parsed[typ]:
@@ -794,7 +831,10 @@ class Parser:
         if ref:
             return self.render_ref_markdown(ref, m.group(3), code=code)
         else:
-            log.warning('%s:~%s: reference "%s" could not be resolved', self.ctx.file, self.ctx.line, m.group(2))
+            self.diagnostics.add(
+                'references',
+                'reference "{}" could not be resolved'.format(m.group(2)),
+                self.ctx.file, self.ctx.line)
             return m.group(3) or m.group(2)
 
 
@@ -956,7 +996,10 @@ class Parser:
                     refs = [self.resolve_ref(see) for see in tag.refs]
                     content.append(SeeAlso([ref.id for ref in refs if ref]))
                 else:
-                    log.error('%s:%s: unknown tag @%s or missing arguments', self.ctx.file, n, tag)
+                    self.diagnostics.add(
+                        'structure',
+                        'unknown tag @{} or missing arguments'.format(tag),
+                        self.ctx.file, n)
 
             elif line is not None:
                 dedent = indent if dedent is None else dedent
