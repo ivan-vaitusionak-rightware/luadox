@@ -29,22 +29,15 @@ from .utils import *
 # TODO: better vararg support
 ParseFuncResult = Tuple[Union[str, None], Union[List[str], None]]
 
-def is_numeric_literal(value: Optional[str]) -> bool:
+def is_integer_literal(value: Optional[str]) -> bool:
     """
-    True if value is a numeric Lua literal: an integer, hexadecimal, or float,
-    optionally signed and with an exponent.  @enum members must be numeric
-    constants -- a reference, call, string or expression is not a closed-enum
-    value -- so the language server can treat membership as closed.
+    True if value is an integer Lua literal: a decimal or hexadecimal integer,
+    optionally signed.  @enum members mirror C++ enumerators, which are integral,
+    so a float, string, reference, call or expression is not a closed-enum value.
     """
     if not value:
         return False
-    number = (
-        r'''^[+-]?(?:'''
-        r'''0[xX](?:[0-9a-fA-F]+\.?[0-9a-fA-F]*|\.[0-9a-fA-F]+)(?:[pP][+-]?\d+)?'''  # hex int/float
-        r'''|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?'''                                   # decimal int/float
-        r''')$'''
-    )
-    return bool(recache(number).match(value))
+    return bool(recache(r'''^[+-]?(?:0[xX][0-9a-fA-F]+|\d+)$''').match(value))
 
 # Maps collection tags to their typed Reference objects
 COLLECTION_TAGS: Dict[Type[tags.CollectionTag], Type[Reference]] = {
@@ -591,10 +584,10 @@ class Parser:
     def validate_enums(self) -> None:
         """
         Reports @enum tables that can't form a closed enumeration: those with no
-        members (e.g. the tag landed on something that isn't a numeric table), and
-        members not assigned a numeric value.  A closed enumeration needs every
-        member to carry a numeric constant so renderers with a native enum
-        representation can treat membership as closed.
+        members (e.g. the tag landed on something that isn't an integer table), and
+        members not assigned an integer value.  A closed enumeration needs every
+        member to carry an integer constant (mirroring a C++ enumerator) so
+        renderers with a native enum representation can treat membership as closed.
         """
         for colref in self.parsed[TableRef]:
             if not colref.flags.get('enum'):
@@ -608,14 +601,14 @@ class Parser:
             if not members:
                 self.diagnostics.add(
                     'structure',
-                    '@enum {} has no members with a numeric value'.format(colref.name),
+                    '@enum {} has no members with an integer value'.format(colref.name),
                     colref.file, colref.line)
                 continue
             for member in members:
-                if not is_numeric_literal(member.value):
+                if not is_integer_literal(member.value):
                     self.diagnostics.add(
                         'structure',
-                        '@enum member {} is not assigned a numeric value'.format(member.name),
+                        '@enum member {} is not assigned an integer value'.format(member.name),
                         member.file, member.line)
 
 
