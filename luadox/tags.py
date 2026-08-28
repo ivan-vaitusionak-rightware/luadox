@@ -315,5 +315,21 @@ class TagParser:
             yield ClassTag(name=kwargs['name'].rstrip(':'))
             yield InheritsTag(superclasses=kwargs['superclass'])
         else:
+            if tagcls == ClassTag and 'superclass' in kwargs:
+                # ClassTag has no superclass field of its own -- the argument exists only
+                # to feed the colon form handled above.  With no colon attached to the
+                # class name there is nothing to attach it to, and passing it through
+                # would raise TypeError from the dataclass constructor, which escapes as
+                # an unhandled traceback.  Fail as a ParseError instead.
+                name = kwargs['name'].rstrip(':')
+                extra = kwargs['superclass']
+                if not extra.strip(':'):
+                    detail = ('the colon must be attached to the class name, as '
+                              '"@class {}: parent"'.format(name))
+                else:
+                    detail = ('write "@class {}: {}" to declare a parent, or use a '
+                              'separate @inherits tag'.format(name, extra))
+                raise AssertionError(
+                    'unexpected argument after the class name; ' + detail)
             yield tagcls(**kwargs)
 
