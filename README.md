@@ -282,7 +282,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@class` | Top-level collection | Like `@module` but for classes, which are also given their own separate documentation pages. See also `@inherits`.  | `@class xyz.SomeClass` |
 | `@section` |  Collection | Organizes documented elements such as fields, functions, and tables into a visually distinct group with a heading and arbitrary preamble. Sections can't be nested within other sections; a `@section` tag always creates a *new* section within a top-level collection. | `@section utils.files` |
 | `@table` | Nested collection | Declares a new collection containing only fields (not functions like other collections), and allows nesting where field names are fully qualified based on the encapsulating table(s). In most common cases, `@table` isn't needed and `@section` will suffice. | `@table constants` |
-| `@enum` | `@table` modifier | Marks the table as a closed enumeration whose members are exactly the fields assigned in its table constructor, each with a literal value. Renderers with an enumeration representation treat membership as closed. | `@enum` |
+| `@enum` | Nested collection | Like `@table`, but declares the collection to be a closed enumeration whose members are exactly the fields assigned in its table constructor, each with a literal value. Renderers with an enumeration representation treat membership as closed. | `@enum xyz.FieldOfViewType` |
 | `@inherits` | `@class` modifier | Indicates that the current class is subclassed from one or more other classes (repeat the tag or list several parents). The first parent's lineage is searched when resolving references, all parents are listed on the class page, and the hierarchy is shown as a tree. | `@inherits xyz.BaseClass` |
 | `@tparam` | Function modifier | Documents a typed parameter of the function definition that follows | `@tparam number\|nil w the width of the image, or nil to derive it from height and aspect` |
 | `@treturn` | Function modifier | Documents a return value of the function definition that follows | `@treturn bool true if successful, false otherwise` |
@@ -393,14 +393,14 @@ xyz.os = {
 
 ### `@enum`
 
-Used within a `@table` block to declare that the table is a closed enumeration: its
+A variant of `@table` that declares the collection to be a closed enumeration: its
 members are exactly the fields assigned in the table constructor, each with a literal
-value.
+value.  Like `@table`, it introduces a named nested collection, so it is used in place
+of `@table`, not alongside it.
 
 ```lua
 --- Field of view type.
---- @table FieldOfViewType
---- @enum
+--- @enum FieldOfViewType
 FieldOfViewType = {
     --- Horizontal field of view.
     XFov = 0,
@@ -409,12 +409,12 @@ FieldOfViewType = {
 }
 ```
 
-The tag is for renderers with an enumeration representation, which can treat
-membership as closed; the bundled renderers currently render the table like any
-other, with the members' literal values carried in the json/yaml output.  A table
-marked `@enum` whose members don't all have literal values (a member assigned a
-function, or a value spanning multiple lines, has none) cannot be a closed
-enumeration, and renderers fall back to treating it as an ordinary table.
+The bundled renderers show each member's literal value (in the HTML output beside the
+member name, and carried in the json/yaml output); a renderer with a native
+enumeration representation can additionally treat membership as closed.  A member
+whose value isn't a complete literal (assigned a function, or an expression spanning
+multiple lines) has none, so such a table cannot be a closed enumeration and renderers
+fall back to treating it as an ordinary table.
 
 ### `@inherits`
 

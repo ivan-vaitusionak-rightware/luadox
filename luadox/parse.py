@@ -35,6 +35,7 @@ COLLECTION_TAGS: Dict[Type[tags.CollectionTag], Type[Reference]] = {
     tags.ClassTag: ClassRef,
     tags.ModuleTag: ModuleRef,
     tags.TableTag: TableRef,
+    tags.EnumTag: TableRef,
 }
 
 class Context:
@@ -432,6 +433,8 @@ class Parser:
                         # As with class above, replace scopes list.
                         scopes = [scopes[0], ref]
                     elif isinstance(tag, tags.TableTag):
+                        if isinstance(tag, tags.EnumTag):
+                            ref.flags['enum'] = True
                         scopes.append(ref)
                         parse_next_code_line = False
                     elif isinstance(tag, tags.FieldTag):
@@ -453,12 +456,6 @@ class Parser:
                         ref.flags['compact'] = tag.elements
                     elif isinstance(tag, tags.FullnamesTag):
                         ref.flags['fullnames'] = True
-                    elif isinstance(tag, tags.EnumTag):
-                        if isinstance(ref, TableRef):
-                            ref.flags['enum'] = True
-                        else:
-                            log.warning('%s:%s: @enum applies to @table collections, ignoring on %s',
-                                        path, n, ref.type or 'comment block')
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
