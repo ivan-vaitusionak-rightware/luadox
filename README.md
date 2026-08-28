@@ -411,10 +411,15 @@ FieldOfViewType = {
 
 The bundled renderers show each member's literal value (in the HTML output beside the
 member name, and carried in the json/yaml output); a renderer with a native
-enumeration representation can additionally treat membership as closed.  A member
-whose value isn't a complete literal (assigned a function, or an expression spanning
-multiple lines) has none, so such a table cannot be a closed enumeration and renderers
-fall back to treating it as an ordinary table.
+enumeration representation can additionally treat membership as closed.
+
+Because a closed enumeration is only meaningful when every member is a literal, LuaDox
+reports a `structure` diagnostic for an `@enum` that has no members with a literal value
+(for example, the tag placed on something that isn't a literal table), and for any
+member assigned a non-literal value (a function, a reference, or an expression). A
+member value that isn't a complete single-line literal — assigned a function or an
+expression spanning multiple lines — is captured as no value at all, and is reported the
+same way.
 
 ### `@inherits`
 

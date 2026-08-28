@@ -27,7 +27,21 @@ from .reference import *
 from .utils import *
 
 # TODO: better vararg support
-ParseFuncResult = Tuple[Union[str, None], Union[List[str], None]] 
+ParseFuncResult = Tuple[Union[str, None], Union[List[str], None]]
+
+def is_literal(value: Optional[str]) -> bool:
+    """
+    True if value is a single Lua literal constant -- a number, a quoted string,
+    or a boolean/nil keyword -- rather than an expression, reference, or call.
+    Every member of a closed @enum must be a literal.
+    """
+    if not value:
+        return False
+    if value in ('true', 'false', 'nil'):
+        return True
+    number = r'''^[+-]?(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)$'''
+    string = r'''^"(?:[^"\\]|\\.)*"$|^'(?:[^'\\]|\\.)*'$'''
+    return bool(recache(number).match(value) or recache(string).match(value))
 
 # Maps collection tags to their typed Reference objects
 COLLECTION_TAGS: Dict[Type[tags.CollectionTag], Type[Reference]] = {
@@ -569,6 +583,32 @@ class Parser:
                 # explicitly defined, go ahead and add it now.
                 self._add_reference(ref)
         return requires
+
+
+    def validate_enums(self) -> None:
+        """
+        Reports @enum tables that can't form a closed enumeration: those with no
+        members (e.g. the tag landed on something that isn't a literal table), and
+        members not assigned a literal value.  A closed enumeration needs every
+        member to carry a literal so renderers with a native enum representation
+        can treat membership as closed.
+        """
+        for colref in self.parsed[TableRef]:
+            if not colref.flags.get('enum'):
+                continue
+            members = [ref for ref in self.parsed[FieldRef] if ref.collection is colref]
+            if not members:
+                self.diagnostics.add(
+                    'structure',
+                    '@enum {} has no members with a literal value'.format(colref.name),
+                    colref.file, colref.line)
+                continue
+            for member in members:
+                if not is_literal(member.value):
+                    self.diagnostics.add(
+                        'structure',
+                        '@enum member {} is not assigned a literal value'.format(member.name),
+                        member.file, member.line)
 
 
     def parse_manual(self, name: str, f: IO[str]) -> None:

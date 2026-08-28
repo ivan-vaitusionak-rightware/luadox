@@ -268,6 +268,8 @@ def main():
             log.exception(f'unhandled {msg}')
         sys.exit(1)
 
+    parser.validate_enums()
+
     # LuaDox v1 fallback
     outdir = config.get('project', 'outdir', fallback=None)
     # LuaDox v2 just calls it 'out'
