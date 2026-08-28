@@ -268,6 +268,8 @@ def main():
             log.exception(f'unhandled {msg}')
         sys.exit(1)
 
+    # Post-parse and best-effort: a ParseError above already exits, so this runs
+    # only for a tree that parsed cleanly.
     parser.validate_enums()
 
     # LuaDox v1 fallback
