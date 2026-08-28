@@ -394,7 +394,7 @@ xyz.os = {
 ### `@enum`
 
 A variant of `@table` that declares the collection to be a closed enumeration: its
-members are exactly the fields assigned in the table constructor, each with a literal
+members are exactly the fields assigned in the table constructor, each with a numeric
 value.  Like `@table`, it introduces a named nested collection, so it is used in place
 of `@table`, not alongside it.
 
@@ -409,17 +409,16 @@ FieldOfViewType = {
 }
 ```
 
-The bundled renderers show each member's literal value (in the HTML output beside the
-member name, and carried in the json/yaml output); a renderer with a native
-enumeration representation can additionally treat membership as closed.
+Enum members must be assigned a **numeric** literal (integer, hexadecimal, or float);
+a string, boolean, reference, call, or expression is not a closed-enum value.  The
+bundled renderers show each member's value (in the HTML output beside the member name,
+and carried in the json/yaml output); a renderer with a native enumeration
+representation can additionally treat membership as closed.
 
-Because a closed enumeration is only meaningful when every member is a literal, LuaDox
-reports a `structure` diagnostic for an `@enum` that has no members with a literal value
-(for example, the tag placed on something that isn't a literal table), and for any
-member assigned a non-literal value (a function, a reference, or an expression). A
-member value that isn't a complete single-line literal — assigned a function or an
-expression spanning multiple lines — is captured as no value at all, and is reported the
-same way.
+Because a closed enumeration is only meaningful when every member is a numeric constant,
+LuaDox reports a `structure` diagnostic for an `@enum` that has no members with a numeric
+value (for example, the tag placed on something that isn't a numeric table) and for any
+member not assigned a numeric value.
 
 ### `@inherits`
 

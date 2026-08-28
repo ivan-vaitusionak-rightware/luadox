@@ -29,19 +29,22 @@ from .utils import *
 # TODO: better vararg support
 ParseFuncResult = Tuple[Union[str, None], Union[List[str], None]]
 
-def is_literal(value: Optional[str]) -> bool:
+def is_numeric_literal(value: Optional[str]) -> bool:
     """
-    True if value is a single Lua literal constant -- a number, a quoted string,
-    or a boolean/nil keyword -- rather than an expression, reference, or call.
-    Every member of a closed @enum must be a literal.
+    True if value is a numeric Lua literal: an integer, hexadecimal, or float,
+    optionally signed and with an exponent.  @enum members must be numeric
+    constants -- a reference, call, string or expression is not a closed-enum
+    value -- so the language server can treat membership as closed.
     """
     if not value:
         return False
-    if value in ('true', 'false', 'nil'):
-        return True
-    number = r'''^[+-]?(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)$'''
-    string = r'''^"(?:[^"\\]|\\.)*"$|^'(?:[^'\\]|\\.)*'$'''
-    return bool(recache(number).match(value) or recache(string).match(value))
+    number = (
+        r'''^[+-]?(?:'''
+        r'''0[xX](?:[0-9a-fA-F]+\.?[0-9a-fA-F]*|\.[0-9a-fA-F]+)(?:[pP][+-]?\d+)?'''  # hex int/float
+        r'''|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?'''                                   # decimal int/float
+        r''')$'''
+    )
+    return bool(recache(number).match(value))
 
 # Maps collection tags to their typed Reference objects
 COLLECTION_TAGS: Dict[Type[tags.CollectionTag], Type[Reference]] = {
@@ -588,26 +591,31 @@ class Parser:
     def validate_enums(self) -> None:
         """
         Reports @enum tables that can't form a closed enumeration: those with no
-        members (e.g. the tag landed on something that isn't a literal table), and
-        members not assigned a literal value.  A closed enumeration needs every
-        member to carry a literal so renderers with a native enum representation
-        can treat membership as closed.
+        members (e.g. the tag landed on something that isn't a numeric table), and
+        members not assigned a numeric value.  A closed enumeration needs every
+        member to carry a numeric constant so renderers with a native enum
+        representation can treat membership as closed.
         """
         for colref in self.parsed[TableRef]:
             if not colref.flags.get('enum'):
                 continue
-            members = [ref for ref in self.parsed[FieldRef] if ref.collection is colref]
+            # Resolve members the way the renderers do (by name and @within) so
+            # validation can't disagree with what is emitted.
+            members = [ref for ref in self.parsed[FieldRef]
+                       if ref.within == colref.name
+                       or (not ref.within and ref.collection is not None
+                           and ref.collection.name == colref.name)]
             if not members:
                 self.diagnostics.add(
                     'structure',
-                    '@enum {} has no members with a literal value'.format(colref.name),
+                    '@enum {} has no members with a numeric value'.format(colref.name),
                     colref.file, colref.line)
                 continue
             for member in members:
-                if not is_literal(member.value):
+                if not is_numeric_literal(member.value):
                     self.diagnostics.add(
                         'structure',
-                        '@enum member {} is not assigned a literal value'.format(member.name),
+                        '@enum member {} is not assigned a numeric value'.format(member.name),
                         member.file, member.line)
 
 
