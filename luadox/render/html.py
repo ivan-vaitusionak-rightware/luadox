@@ -172,12 +172,14 @@ class HTMLRenderer(Renderer):
 
     def _compact_synopsis_content(self, ref: Reference) -> str:
         """
-        Renders a compact row's content, dropping the leading Deprecated admonition (the
-        marker carries that signal) so it doesn't balloon the one-line cell.
+        Renders a compact row's content.  A compact row has no detail box, so a leading
+        Deprecated admonition is unboxed to plain text (the name-cell marker already flags
+        it) — keeping its explanation without ballooning the one-line cell.
         """
         content = ref.content
         if 'deprecated' in ref.flags and content and isinstance(content[0], Admonition):
-            content = Content(content[1:])
+            explanation = self._content_to_html(content[0].content)
+            return explanation + self._content_to_html(Content(content[1:]))
         return self._content_to_html(content)
 
     def _markdown_to_html(self, md: str) -> str:
