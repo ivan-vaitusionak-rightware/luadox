@@ -523,6 +523,23 @@ dl.functions dt span.icon::after {
     font-size: 140%;
 }
 
+dl.fields dt span.since::before,
+dl.functions dt span.since::before {
+    filter: saturate(0);
+    opacity: 0.9;
+    content: "🕐";
+    padding-right: 0.5em;
+}
+
+/* On a section heading @since is a lightweight stamp, not a pill. */
+h2 span.tag.since {
+    font-size: 60%;
+    font-weight: normal;
+    color: #888;
+    vertical-align: middle;
+    margin-left: 0.6em;
+}
+
 a.permalink:hover {
     color: #c60f0f !important;
     border: none;

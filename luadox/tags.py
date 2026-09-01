@@ -94,6 +94,10 @@ class MetaTag(Tag):
     value: str
 
 @dataclass
+class SinceTag(Tag):
+    version: str
+
+@dataclass
 class ScopeTag(Tag):
     name: str
 
@@ -187,6 +191,7 @@ class TagParser:
         'fullnames': (FullnamesTag, {}),
         'inherits': (InheritsTag, {'superclasses': List[str]}),
         'meta': (MetaTag, {'value': str}),
+        'since': (SinceTag, {'version': VarString}),
         'scope': (ScopeTag, {'name': str}),
         'rename': (RenameTag, {'name': str}),
         'display': (DisplayTag, {'name': str}),

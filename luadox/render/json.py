@@ -97,6 +97,8 @@ class JSONRenderer(Renderer):
             'symbol': colref.symbol,
             'heading': colref.heading,
         }
+        if colref.flags.get('since'):
+            section['since'] = colref.flags['since']
         section.update({k:v for k, v in kwargs.items() if v})
         content = self._render_content(colref.content)
         if content:
@@ -177,6 +179,8 @@ class JSONRenderer(Renderer):
             field['types'] = self._render_types(ref.types)
         if ref.meta:
             field['meta'] = ref.meta
+        if ref.flags.get('since'):
+            field['since'] = ref.flags['since']
         content = self._render_content(ref.content)
         if content:
             field['content'] = content

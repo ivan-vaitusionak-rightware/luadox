@@ -163,6 +163,14 @@ class HTMLRenderer(Renderer):
         """
         return '<a class="permalink" href="#{}" title="Permalink to this definition">¶</a>'.format(id)
 
+    def _since(self, ref: Reference) -> str:
+        """
+        Returns a lightweight 'since <version>' tag for an element carrying @since, or an
+        empty string when it has none.
+        """
+        version = ref.flags.get('since')
+        return '<span class="tag since">since {}</span>'.format(version) if version else ''
+
     def _markdown_to_html(self, md: str) -> str:
         """
         Renders the given markdown as HTML and returns the result.
@@ -492,6 +500,7 @@ class HTMLRenderer(Renderer):
                 # isn't valid HTML for headings to contain block elements.
                 heading.replace('<p>', '').replace('</p>', '')
             ))
+            out(self._since(colref))
             out(self._permalink(colref.symbol))
             out('</h2>')
             out('<div class="inner">')
@@ -638,6 +647,7 @@ class HTMLRenderer(Renderer):
                         out('<span class="tag type">{}</span>'.format(types))
                     if ref.meta:
                         out('<span class="tag meta">{}</span>'.format(ref.meta))
+                    out(self._since(ref))
                     out(self._permalink(ref.name))
                     out('</dt>')
                     out('<dd>')
@@ -658,6 +668,7 @@ class HTMLRenderer(Renderer):
                     out('<span class="icon"></span><var>{}</var>({})'.format(ref.display, params))
                     if ref.meta:
                         out('<span class="tag meta">{}</span>'.format(ref.meta))
+                    out(self._since(ref))
                     out(self._permalink(ref.name))
                     out('</dt>')
                     out('<dd>')
