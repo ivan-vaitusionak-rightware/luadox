@@ -14,6 +14,7 @@
 
 __all__ = [
     'Sentinel', 'Content', 'ContentFragment', 'Markdown', 'Admonition', 'SeeAlso',
+    'deprecated_admonition',
     'recache', 'get_first_sentence', 'get_indent_level', 'strip_trailing_comment',
     'files_str_to_list',
 ]
@@ -98,6 +99,14 @@ class Admonition(ContentFragment):
     type: str
     title: str
     content: 'Content'
+
+
+def deprecated_admonition(body: 'Content') -> Admonition:
+    """
+    The admonition that renders a @deprecated element, built in one place so the flag
+    path and the manual-page content path can't drift apart.
+    """
+    return Admonition('warning', 'Deprecated', body)
 
 
 @dataclass

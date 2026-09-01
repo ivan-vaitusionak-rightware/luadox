@@ -60,8 +60,6 @@ class Prerenderer:
         toprefs.sort(key=lambda ref: (ref.type, ref.symbol))
         return toprefs
 
-
-
     def _apply_deprecated(self, ref: Reference) -> None:
         """
         Renders a @deprecated flag as a leading Deprecated admonition, so every
@@ -75,7 +73,7 @@ class Prerenderer:
         body = Content(postprocess=self.parser.refs_to_markdown)
         if ref.flags['deprecated']:
             body.md().append(ref.flags['deprecated'])
-        ref.content.insert(0, Admonition('warning', 'Deprecated', body))
+        ref.content.insert(0, deprecated_admonition(body))
 
 
     def _do_classmod(self, topref: Union[ClassRef, ModuleRef]) -> None:

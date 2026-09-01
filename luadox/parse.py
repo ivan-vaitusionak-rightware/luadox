@@ -995,7 +995,7 @@ class Parser:
                     # prerenderer renders the admonition.
                     if tag.desc:
                         tagcontent.md().append(tag.desc)
-                    content.append(Admonition('warning', 'Deprecated', tagcontent))
+                    content.append(deprecated_admonition(tagcontent))
                     dedent = None
                 elif isinstance(tag, tags.ParamTag):
                     if tag.desc:
