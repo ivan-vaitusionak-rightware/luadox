@@ -104,9 +104,11 @@ class Admonition(ContentFragment):
 def deprecated_admonition(body: 'Content') -> Admonition:
     """
     The admonition that renders a @deprecated element, built in one place so the flag
-    path and the manual-page content path can't drift apart.
+    path and the manual-page content path can't drift apart.  Its own 'deprecated' type
+    (rather than a generic warning) gives it distinct styling and a self-describing level
+    in the structured renderers.
     """
-    return Admonition('warning', 'Deprecated', body)
+    return Admonition('deprecated', 'Deprecated', body)
 
 
 @dataclass

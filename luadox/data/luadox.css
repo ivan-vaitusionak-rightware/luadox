@@ -485,6 +485,21 @@ div.note > div.title {
     border-bottom: 1px solid #609060;
 }
 
+/* @deprecated has its own amber styling, distinct from a red @warning. */
+div.deprecated {
+    border: 1px solid #8a6d00;
+    background-color: #fdf3d7;
+}
+
+div.deprecated > div.title {
+    background-color: #b8860b;
+    border-bottom: 1px solid #8a6d00;
+}
+
+div.deprecated > div.title::before {
+    content: "⚠ ";
+}
+
 /* Compact synopsis marker for a @deprecated element (the full box won't fit a row). */
 td.name span.tag.deprecated {
     font-size: 70%;
