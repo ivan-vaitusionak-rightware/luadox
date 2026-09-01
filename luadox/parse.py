@@ -446,7 +446,10 @@ class Parser:
                     elif isinstance(tag, tags.FullnamesTag):
                         ref.flags['fullnames'] = True
                     elif isinstance(tag, tags.DeprecatedTag):
-                        ref.flags['deprecated'] = tag.desc or ''
+                        # Accumulate explanations across repeated @deprecated tags rather
+                        # than overwriting, so none is silently dropped.
+                        parts = [p for p in (ref.flags.get('deprecated'), tag.desc) if p]
+                        ref.flags['deprecated'] = '\n\n'.join(parts)
                     elif isinstance(tag, tags.MetaTag):
                         ref.flags['meta'] = tag.value
                     elif isinstance(tag, tags.InheritsTag):
