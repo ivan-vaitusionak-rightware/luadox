@@ -1006,9 +1006,13 @@ class Parser:
                     refs = [self.resolve_ref(see) for see in tag.refs]
                     content.append(SeeAlso([ref.id for ref in refs if ref]))
                 else:
+                    # An UnrecognizedTag's .type is the constant 'unrecognized'; its real
+                    # spelling lives in .name.  A recognized-but-misplaced tag has no .name,
+                    # and its .type is the useful identifier.
+                    name = tag.name if isinstance(tag, tags.UnrecognizedTag) else tag.type
                     self.diagnostics.add(
                         'structure',
-                        'unknown tag @{} or missing arguments'.format(tag.type),
+                        'unknown tag @{} or missing arguments'.format(name),
                         self.ctx.file, n)
 
             elif line is not None:
