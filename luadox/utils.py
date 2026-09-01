@@ -123,16 +123,22 @@ class Content(List[ContentFragment]):
         self._md_postprocess = postprocess
         self._first = None
 
-    def get_first_sentence(self, pop=False) -> str:
+    def get_first_sentence(self, pop=False, skip_leading=False) -> str:
         """
         Returns the first sentence from the content.  If pop is True then the content
-        is updated in-place to remove the sentence that was returned.
+        is updated in-place to remove the sentence that was returned.  If skip_leading
+        is True, leading non-Markdown fragments (e.g. a prerendered Deprecated
+        admonition) are skipped so they can't hide an element's summary sentence;
+        otherwise a leading non-Markdown fragment yields an empty string.
         """
-        # Skip leading non-Markdown fragments (e.g. a prerendered Deprecated
-        # admonition) so they can't hide the element's summary sentence.
-        for n, e in enumerate(self):
-            if isinstance(e, Markdown):
-                break
+        if skip_leading:
+            for n, e in enumerate(self):
+                if isinstance(e, Markdown):
+                    break
+            else:
+                return ''
+        elif self and isinstance(self[0], Markdown):
+            n, e = 0, self[0]
         else:
             return ''
         first, remaining = get_first_sentence(e.get())

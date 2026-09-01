@@ -585,7 +585,7 @@ class HTMLRenderer(Renderer):
                             nmeta -= 1
 
                         if not fields_compact:
-                            html = self._markdown_to_html(ref.content.get_first_sentence())
+                            html = self._markdown_to_html(ref.content.get_first_sentence(skip_leading=True))
                         else:
                             html = self._content_to_html(ref.content)
                         if html:
@@ -617,7 +617,7 @@ class HTMLRenderer(Renderer):
                             meta -= 1
                     
                         if not functions_compact:
-                            html = self._markdown_to_html(ref.content.get_first_sentence())
+                            html = self._markdown_to_html(ref.content.get_first_sentence(skip_leading=True))
                         else:
                             html = self._content_to_html(ref.content)
                         out('<td class="doc">{}</td>'.format(html))
