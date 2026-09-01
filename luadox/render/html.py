@@ -163,6 +163,23 @@ class HTMLRenderer(Renderer):
         """
         return '<a class="permalink" href="#{}" title="Permalink to this definition">¶</a>'.format(id)
 
+    def _deprecated_marker(self, ref: Reference) -> str:
+        """
+        A compact 'deprecated' tag for a synopsis row, so a deprecated element is flagged
+        where the full admonition would not fit.
+        """
+        return '<span class="tag deprecated">deprecated</span>' if 'deprecated' in ref.flags else ''
+
+    def _compact_synopsis_content(self, ref: Reference) -> str:
+        """
+        Renders a compact row's content, dropping the leading Deprecated admonition (the
+        marker carries that signal) so it doesn't balloon the one-line cell.
+        """
+        content = ref.content
+        if 'deprecated' in ref.flags and content and isinstance(content[0], Admonition):
+            content = Content(content[1:])
+        return self._content_to_html(content)
+
     def _markdown_to_html(self, md: str) -> str:
         """
         Renders the given markdown as HTML and returns the result.
@@ -569,7 +586,7 @@ class HTMLRenderer(Renderer):
                             out('<td class="name"><a href="#{}"><var>{}</var></a></td>'.format(ref.name, ref.title))
                         else:
                             link = self._permalink(ref.name)
-                            out('<td class="name"><var id="{}">{}</var>{}</td>'.format(ref.name, ref.title, link))
+                            out('<td class="name"><var id="{}">{}</var>{}{}</td>'.format(ref.name, ref.title, self._deprecated_marker(ref), link))
                         nmeta = fields_meta_columns
                         if ref.types:
                             types = self._types_to_html(ref.types)
@@ -587,7 +604,7 @@ class HTMLRenderer(Renderer):
                         if not fields_compact:
                             html = self._markdown_to_html(ref.content.get_first_sentence(skip_leading=True))
                         else:
-                            html = self._content_to_html(ref.content)
+                            html = self._compact_synopsis_content(ref)
                         if html:
                             out('<td class="doc">{}</td>'.format(html))
                         out('</tr>')
@@ -606,8 +623,8 @@ class HTMLRenderer(Renderer):
                         else:
                             link = self._permalink(ref.name)
                             params = ', '.join('<em>{}</em>'.format(param) for param, _, _ in ref.params)
-                            html = '<td class="name"><var id="{}">{}</var>({}){}</td>'
-                            out(html.format(ref.name, display, params, link))
+                            html = '<td class="name"><var id="{}">{}</var>({}){}{}</td>'
+                            out(html.format(ref.name, display, params, self._deprecated_marker(ref), link))
                         meta = functions_meta_columns
                         if ref.meta:
                             out('<td class="meta">{}</td>'.format(ref.meta))
@@ -619,7 +636,7 @@ class HTMLRenderer(Renderer):
                         if not functions_compact:
                             html = self._markdown_to_html(ref.content.get_first_sentence(skip_leading=True))
                         else:
-                            html = self._content_to_html(ref.content)
+                            html = self._compact_synopsis_content(ref)
                         out('<td class="doc">{}</td>'.format(html))
                         out('</tr>')
                     out('</table>')

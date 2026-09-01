@@ -479,6 +479,21 @@ div.note > div.title {
     border-bottom: 1px solid #609060;
 }
 
+/* Compact synopsis marker for a @deprecated element (the full box won't fit a row). */
+td.name span.tag.deprecated {
+    font-size: 70%;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #b04040;
+    border: 1px solid #b04040;
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 0.6em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 dl.fields dt span.icon::after {
     content: "🏷️ ";
     vertical-align: middle;
