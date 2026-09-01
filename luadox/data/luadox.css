@@ -463,6 +463,12 @@ div.admonition div.body {
     padding: 0;
 }
 
+/* A title-only admonition (e.g. a bare @deprecated) has no body below the title,
+   so it shouldn't keep the divider the title draws between itself and a body. */
+div.admonition > div.title:last-child {
+    border-bottom: none;
+}
+
 
 div.warning {
     border: 1px solid #900000;
