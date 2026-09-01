@@ -282,7 +282,6 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@class` | Top-level collection | Like `@module` but for classes, which are also given their own separate documentation pages. See also `@inherits`.  | `@class xyz.SomeClass` |
 | `@section` |  Collection | Organizes documented elements such as fields, functions, and tables into a visually distinct group with a heading and arbitrary preamble. Sections can't be nested within other sections; a `@section` tag always creates a *new* section within a top-level collection. | `@section utils.files` |
 | `@table` | Nested collection | Declares a new collection containing only fields (not functions like other collections), and allows nesting where field names are fully qualified based on the encapsulating table(s). In most common cases, `@table` isn't needed and `@section` will suffice. | `@table constants` |
-| `@deprecated` | Element modifier | Marks the element as deprecated, with an optional explanation. Renders as a leading Deprecated admonition; renderers with a native deprecation representation also use the flag directly. | `@deprecated Use newThing instead.` |
 | `@inherits` | `@class` modifier | Indicates that the current class is subclassed from one or more other classes (repeat the tag or list several parents). The first parent's lineage is searched when resolving references, all parents are listed on the class page, and the hierarchy is shown as a tree. | `@inherits xyz.BaseClass` |
 | `@tparam` | Function modifier | Documents a typed parameter of the function definition that follows | `@tparam number\|nil w the width of the image, or nil to derive it from height and aspect` |
 | `@treturn` | Function modifier | Documents a return value of the function definition that follows | `@treturn bool true if successful, false otherwise` |
@@ -297,6 +296,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@rename` | Element modifier | Overrides *both* the display name and actual name of the element, affecting both its presentation in rendered pages as well as how the element is referenced. | `@rename different_function` |
 | `@scope` | Element modifier | Changes the scope of non top-level elements (i.e. functions, fields, and tables, but not classes or modules), affecting both the element's display name and reference name.  A special scope `.` can be used to treat the element as global and will prevent its name from being qualified by the collection it belongs to.  Unlike `@within`, the element is still documented in the same place (class or module page), but its fully qualified name will reflect the given scope name.   | `@scope .` |
 | `@alias` | Element modifier | Adds another name by which the element can be referenced. Does not affect the display name. | `@alias fooconsts` |
+| `@deprecated` | Element modifier | Marks the element as deprecated, with an optional explanation. Renders as a leading Deprecated admonition; the deprecated flag is also carried in the json/yaml output. | `@deprecated Use newThing instead.` |
 | `@code` | Code block | Creates a code block with Lua syntax highlighting.  Any contents indented below the `@code` line will be included in the code block. | (See below.) |
 | `@example` | Code block | Like `@code` but adds an "Example" heading just above the code block | (See `@code`) |
 | `@usage` | Code block | Like `@code` but adds an "Usage" heading just above the code block | (See `@code`) |
@@ -403,11 +403,12 @@ function Api:oldThing()
 end
 ```
 
-The explanation is the rest of the tag's line.  Every renderer shows a leading
-*Deprecated* admonition with it; a renderer with a native deprecation representation
-can additionally use the flag directly.  When migrating existing hand-written
-"deprecated" warnings to the tag, migrate each element in one step -- an element
-carrying both spellings renders two admonitions.
+The explanation is the rest of the tag's line; repeat `@deprecated` to give several
+reasons.  Every renderer shows a leading *Deprecated* admonition with the explanation,
+and the json and yaml renderers additionally carry a `deprecated` field on the element
+so it can be detected without parsing the admonition.  When migrating existing
+hand-written "deprecated" warnings to the tag, migrate each element in one step -- an
+element carrying both spellings renders two admonitions.
 
 ### `@inherits`
 
