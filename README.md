@@ -288,6 +288,7 @@ Here is a summary of LuaDox tags, with more details below the table:
 | `@see` | Section modifier | Adds a styled "See also" line linking to one or more space-delimited references | `@see ref1 ref2` |
 | `@type` | Field modifier | Documents the type of the field definition that follows | `@type table\|nil` |
 | `@meta` | Field modifier | Documents arbitrary information for the field definition that follows | `@meta read/write` |
+| `@since` | Element modifier | Records the version the element first appeared in, rendered as a lightweight *since* stamp. | `@since 1.2.0` |
 | `@within` | Function/field modifier | Relocates the field or function to another collection while preserving its name. | `@within someothermodule` |
 | `@order` | Element modifier | Normally elements are documented in the order they appear in source, but `@order` allows changing the position of an element relative to other elements in the same rendered page. | `@order before somefunc` |
 | `@compact` | Collection modifier | Normally, fields and functions in a collection are shown first in summary table form and then broken out later with full documentation. `@compact` controls whether fields and/or functions should *only* show in tabular form. Useful for elements with smaller comments, such as a table of constants. Without arguments, both functions and fields will be shown in compact form, but you can specify `fields` or `functions` as an argument to compact just one of them. | `@compact fields` |
@@ -520,6 +521,23 @@ defaults = {
    w = 640
 }
 ```
+
+### `@since`
+
+Records the version in which the documented element first appeared.  It takes the form
+`@since <version>` where `<version>` is the rest of the line, and applies to any element
+— a class, function, field, or table.
+
+```lua
+--- Enables the widget.
+--- @since 1.4.0
+function Widget:enable()
+end
+```
+
+Unlike `@deprecated`, which renders a prominent admonition, `@since` renders as an
+unobtrusive *since* stamp beside the element (and is carried in the json/yaml output as a
+`since` field), since it is reference information rather than a warning.
 
 ### `@within`
 
