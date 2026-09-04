@@ -451,7 +451,10 @@ class Parser:
                         if tag.version:
                             ref.flags['since'] = tag.version
                         else:
-                            log.warning('%s:%s: @since requires a version, ignoring', path, n)
+                            self.diagnostics.add(
+                                'structure',
+                                '@since requires a version, ignoring',
+                                path, n)
                     elif isinstance(tag, tags.InheritsTag):
                         # Accumulate parents across repeated @inherits tags and a single
                         # multi-parent tag, splitting on commas and dropping empties.

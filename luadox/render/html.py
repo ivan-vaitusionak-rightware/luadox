@@ -576,7 +576,7 @@ class HTMLRenderer(Renderer):
                             out('<td class="name"><a href="#{}"><var>{}</var></a></td>'.format(ref.name, ref.title))
                         else:
                             link = self._permalink(ref.name)
-                            out('<td class="name"><var id="{}">{}</var>{}</td>'.format(ref.name, ref.title, link))
+                            out('<td class="name"><var id="{}">{}</var>{}{}</td>'.format(ref.name, ref.title, self._since(ref), link))
                         nmeta = fields_meta_columns
                         if ref.types:
                             types = self._types_to_html(ref.types)
@@ -613,8 +613,8 @@ class HTMLRenderer(Renderer):
                         else:
                             link = self._permalink(ref.name)
                             params = ', '.join('<em>{}</em>'.format(param) for param, _, _ in ref.params)
-                            html = '<td class="name"><var id="{}">{}</var>({}){}</td>'
-                            out(html.format(ref.name, display, params, link))
+                            html = '<td class="name"><var id="{}">{}</var>({}){}{}</td>'
+                            out(html.format(ref.name, display, params, self._since(ref), link))
                         meta = functions_meta_columns
                         if ref.meta:
                             out('<td class="meta">{}</td>'.format(ref.meta))
