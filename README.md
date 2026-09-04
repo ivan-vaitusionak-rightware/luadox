@@ -410,6 +410,10 @@ so it can be detected without parsing the admonition.  When migrating existing
 hand-written "deprecated" warnings to the tag, migrate each element in one step -- an
 element carrying both spellings renders two admonitions.
 
+In a docstring the explanation is the tag's line only; an indented continuation line
+falls into the element body rather than the admonition.  On a manually-authored page
+`@deprecated` is a content tag, so an indented continuation does nest inside the box.
+
 ### `@inherits`
 
 Used within the context of a `@class` block to declare that the class has been derived
