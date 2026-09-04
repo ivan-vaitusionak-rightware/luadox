@@ -585,7 +585,7 @@ class HTMLRenderer(Renderer):
                     for ref in colref.fields:
                         out('<tr>')
                         if not fields_compact:
-                            out('<td class="name"><a href="#{}"><var>{}</var></a></td>'.format(ref.name, ref.title))
+                            out('<td class="name"><a href="#{}"><var>{}</var></a>{}</td>'.format(ref.name, ref.title, self._deprecated_marker(ref)))
                         else:
                             link = self._permalink(ref.name)
                             out('<td class="name"><var id="{}">{}</var>{}{}</td>'.format(ref.name, ref.title, self._deprecated_marker(ref), link))
@@ -621,7 +621,7 @@ class HTMLRenderer(Renderer):
                         # For compact view, remove topsym prefix from symbol
                         display = ref.display_compact if isinstance(ref.scope, ClassRef) else ref.title
                         if not functions_compact:
-                            out('<td class="name"><a href="#{}"><var>{}</var></a>()</td>'.format(ref.name, display))
+                            out('<td class="name"><a href="#{}"><var>{}</var></a>(){}</td>'.format(ref.name, display, self._deprecated_marker(ref)))
                         else:
                             link = self._permalink(ref.name)
                             params = ', '.join('<em>{}</em>'.format(param) for param, _, _ in ref.params)
