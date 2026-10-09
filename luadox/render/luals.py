@@ -270,7 +270,13 @@ class LuaLSRenderer(Renderer):
             # that documents every return opts out with undocumented_returns = none.
             out('---@return {}'.format(DEFAULT_FIELD_TYPE))
         params = ', '.join(name for name, _, _ in ref.params)
-        out('function {}({}) end'.format(self._function_target(ref), params))
+        target = self._function_target(ref)
+        owner = re.match(r'(.+)[.:]\w+$', target)
+        if owner and owner.group(1) in self._enum_names:
+            # LuaLS reports inject-field for any function added to an ---@enum table,
+            # though the function resolves with its annotations, wherever it is defined.
+            out('---@diagnostic disable-next-line: inject-field')
+        out('function {}({}) end'.format(target, params))
         out('')
 
     def _emit_members(self, out: Callable[[str], None], col: CollectionRef,
@@ -463,6 +469,8 @@ class LuaLSRenderer(Renderer):
             log.critical('invalid [luals] undocumented_returns "%s": expected any or none',
                          self._undocumented_returns)
             sys.exit(1)
+        self._enum_names = {ref.name for ref in self.parser.refs.values()
+                            if isinstance(ref, TableRef) and ref.flags.get('enum')}
         self._open_classes = set(files_str_to_list(
             self.config.get('luals', 'open_classes', fallback='')))
         for name in self._open_classes:
