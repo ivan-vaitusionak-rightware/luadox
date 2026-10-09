@@ -298,6 +298,8 @@ class LuaLSRenderer(Renderer):
             out('    {} = {},'.format(ref.symbol, value))
         out('}')
         out('')
+        for ref in col.functions:
+            self._emit_function(out, ref)
 
     def _doc_mixins(self, topref: ClassRef) -> List[str]:
         """
