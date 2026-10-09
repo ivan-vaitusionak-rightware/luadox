@@ -1165,6 +1165,11 @@ Mappings of note:
 * `@class` becomes `---@class` (with `@inherits` rendered as the LuaLS `: Parent` clause),
   and methods/functions are emitted with their real source-level callable form so
   `Class:method`, `Class.func`, and bare global functions are all preserved.
+* A function whose `@display` is a callable path is defined under that name, so numbered
+  overloads displayed under one name (`Class:f_1` as `Class:f`) become overloads of it.
+  A function displayed as its class -- a middleclass initializer or a native
+  constructor -- becomes an `---@overload` on the class, so `Class(...)` is type-checked
+  and returns an instance.
 * `@table` collections become a `---@class` whose members are typed fields, so the table
   name resolves in a type position and its members can be accessed; members without an
   explicit `@type` default to `any`.
