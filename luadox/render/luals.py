@@ -46,6 +46,10 @@ DEFAULT_FIELD_TYPE = 'any'
 # so they are reduced to their visible link text.
 RE_LUADOX_LINK = re.compile(r'\[([^\]]*)\]\(luadox:[^)]*\)')
 
+# Matches a Lua callable path (name, a.b.name, or a.b:name), which a function can be
+# defined under.
+RE_CALLABLE = re.compile(r'[A-Za-z_]\w*(\.[A-Za-z_]\w*)*(:[A-Za-z_]\w*)?')
+
 # Type names the language server understands without any declaration.
 LUALS_BUILTIN_TYPES = {
     'any', 'boolean', 'string', 'number', 'integer', 'function', 'table',
@@ -203,7 +207,43 @@ class LuaLSRenderer(Renderer):
         out('{} = nil'.format(self._field_lhs(ref)))
         out('')
 
+    def _is_constructor(self, ref: FunctionRef) -> bool:
+        """
+        True if the function is displayed as its class, the form a caller writes to
+        construct an instance (e.g. a middleclass initializer, or a native constructor and
+        its overloads, all displayed as the class name).
+        """
+        topref = ref.topref
+        return isinstance(topref, ClassRef) and ref.flags.get('display') == topref.name
+
+    def _constructor_overload(self, ref: FunctionRef) -> str:
+        """
+        Returns the ---@overload that makes the class callable with the constructor's
+        parameters, returning the documented type or else an instance of the class.
+        """
+        self.ctx.update(ref=ref)
+        params = ', '.join('{}: {}'.format(name, self._map_type(types))
+                           for name, types, _ in ref.params)
+        returns = ', '.join(self._map_type(types) for types, _ in ref.returns)
+        return '---@overload fun({}): {}'.format(params, returns or ref.topref.name)
+
+    def _function_target(self, ref: FunctionRef) -> str:
+        """
+        Returns the name a function is defined under: its @display name when that is a
+        callable path, being the documented form a caller writes (e.g. an overload
+        Class:f_1 displayed as Class:f, which LuaLS then merges as an overload of
+        Class:f), otherwise the real source-level callable (Class:method, Class.func, or
+        a bare global).
+        """
+        display = ref.flags.get('display')
+        if display and RE_CALLABLE.fullmatch(display):
+            return display
+        return ref.symbol
+
     def _emit_function(self, out: Callable[[str], None], ref: FunctionRef) -> None:
+        if self._is_constructor(ref):
+            # Emitted as an ---@overload on its class instead (see _emit_class).
+            return
         self.ctx.update(ref=ref)
         self._emit_doc(out, ref, self._content_to_lines(ref.content))
         for name, types, doc in ref.params:
@@ -229,9 +269,7 @@ class LuaLSRenderer(Renderer):
             # to the same permissive 'any' the fields use rather than claim nil.
             out('---@return {}'.format(DEFAULT_FIELD_TYPE))
         params = ', '.join(name for name, _, _ in ref.params)
-        # ref.symbol is the real source-level callable (Class:method, Class.func, or a
-        # bare global), so it produces the correct definition in all cases.
-        out('function {}({}) end'.format(ref.symbol, params))
+        out('function {}({}) end'.format(self._function_target(ref), params))
         out('')
 
     def _emit_members(self, out: Callable[[str], None], col: CollectionRef,
@@ -345,6 +383,10 @@ class LuaLSRenderer(Renderer):
         if parents:
             decl += ' : {}'.format(', '.join(parents))
         out(decl)
+        for col in topref.collections:
+            for fn in col.functions:
+                if self._is_constructor(fn):
+                    out(self._constructor_overload(fn))
         out('{} = {{}}'.format(topref.name))
         out('')
         for col in topref.collections:
