@@ -263,10 +263,11 @@ class LuaLSRenderer(Renderer):
                 if desc:
                     line += ' # ' + desc
                 out(line)
-        else:
+        elif self._undocumented_returns == 'any':
             # With no documented return the empty definition body makes the language
             # server infer a nil return and reject `local x = obj:create()`, so fall back
-            # to the same permissive 'any' the fields use rather than claim nil.
+            # to the same permissive 'any' the fields use rather than claim nil.  An API
+            # that documents every return opts out with undocumented_returns = none.
             out('---@return {}'.format(DEFAULT_FIELD_TYPE))
         params = ', '.join(name for name, _, _ in ref.params)
         out('function {}({}) end'.format(self._function_target(ref), params))
@@ -456,6 +457,12 @@ class LuaLSRenderer(Renderer):
                 log.critical('invalid [luals] globals token "%s": expected name[:type]', tok)
                 sys.exit(1)
             env_globals.append((name, typ or 'any'))
+        self._undocumented_returns = self.config.get('luals', 'undocumented_returns',
+                                                     fallback='any')
+        if self._undocumented_returns not in ('any', 'none'):
+            log.critical('invalid [luals] undocumented_returns "%s": expected any or none',
+                         self._undocumented_returns)
+            sys.exit(1)
         self._open_classes = set(files_str_to_list(
             self.config.get('luals', 'open_classes', fallback='')))
         for name in self._open_classes:

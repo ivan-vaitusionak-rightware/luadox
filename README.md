@@ -1214,6 +1214,12 @@ mixin_doc_phrase = Includes members from
 # factory), whitespace/newline separated.  Each accepts any member, so accessing one
 # isn't reported as an undefined field; documented members keep their types.
 open_classes = EventArgs
+
+# What a function with no @treturn returns: `any` (the default), which never rejects
+# correct code using a result the documentation forgot, or `none`, which emits no
+# ---@return so the language server treats the function as returning nothing.  Choose
+# `none` when every returned value is documented, to keep `any` out of chained calls.
+undocumented_returns = any
 ```
 
 All options are optional; without a `[luals]` section the output is unchanged.
