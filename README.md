@@ -1061,8 +1061,12 @@ title = My Lua Project
 # This can be spread across multiple lines if you want, as long as the
 # other lines are indented.
 files = ../app/rtk/widget.lua ../app/rtk/
+# How to render the parsed content: html, json, or yaml (default: html).
+# See the "Output formats" section below for details.
+renderer = html
 # The directory containing the rendered output files, which will be created
-# if necessary.
+# if necessary.  For single-file renderers (json, yaml) this may instead
+# be a file path with the appropriate extension.
 outdir = html
 # Path to a custom css file that will be included on every page.  This will
 # be copied into the outdir.
@@ -1115,6 +1119,23 @@ Link sections are optional. Each section takes these options:
 
 User-defined links currently can't be specified on the command line, they must
 be defined in the config file.
+
+## Output formats
+
+LuaDox can render the documentation it parses in several formats, selected with the
+`-r/--renderer` command line argument or the `renderer` option in the `[project]` config
+section.
+
+| Renderer | Output | Description |
+|----------|--------|-------------|
+| `html` (default) | a directory | A self-contained, searchable, browsable documentation website. |
+| `json` | a single file | A structured representation of all parsed content, intended for downstream tooling. |
+| `yaml` | a single file | The same structure as `json` but serialized as YAML. |
+
+For the single-file renderers, the output path (`-o`/`out`) may be a file with the
+matching extension (e.g. `api.json`), or a directory into which a `luadox.<ext>` file is
+written.  Without an output path, `html` renders into `out/` and the single-file
+renderers write `luadox.<ext>` to the current directory.
 
 ## Diagnostics
 
