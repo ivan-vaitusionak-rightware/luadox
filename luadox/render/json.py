@@ -15,10 +15,8 @@
 __all__ = ['JSONRenderer']
 
 import json
-import os
 from typing import Tuple, List, Dict, Any
 
-from ..log import log
 from ..parse import *
 from ..reference import *
 from ..utils import *
@@ -202,24 +200,11 @@ class JSONRenderer(Renderer):
             sections.append(section)
         return out
 
-    def _get_outfile(self, dst: str, ext: str = '.json') -> str:
-        if not dst:
-            dst = './luadox' + ext
-            log.warn('"out" is not defined in config file, assuming %s', dst)
-        if not os.path.isfile(dst) and not dst.endswith(ext):
-            dst = os.path.join(dst, 'luadox' + ext)
-        dirname = os.path.dirname(dst)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname, exist_ok=True)
-        log.info('rendering to %s', dst)
-        return dst
-
-
     def render(self, toprefs: List[TopRef], dst: str) -> None:
         """
         Renders toprefs as JSON to the given output directory or file.
         """
         project = self._generate(toprefs)
-        outfile = self._get_outfile(dst)
+        outfile = self._get_outfile(dst, ext='.json')
         with open(outfile, 'w') as f:
             json.dump(project, f, indent=2)

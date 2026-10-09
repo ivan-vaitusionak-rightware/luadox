@@ -39,6 +39,18 @@ class Renderer:
                 continue
             shutil.copy(fname, outdir)
 
+    def _get_outfile(self, dst: Optional[str], ext: str) -> str:
+        if not dst:
+            dst = './luadox' + ext
+            log.warn('"out" is not defined in config file, assuming %s', dst)
+        if not os.path.isfile(dst) and not dst.endswith(ext):
+            dst = os.path.join(dst, 'luadox' + ext)
+        dirname = os.path.dirname(dst)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname, exist_ok=True)
+        log.info('rendering to %s', dst)
+        return dst
+
     def render(self, toprefs: List[TopRef], outdir: Optional[str]) -> None: # pyright: ignore
         """
         Renders all toprefs to the given output directory (or file, depending on the
