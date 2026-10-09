@@ -156,35 +156,29 @@ class LuaLSRenderer(Renderer):
         text = ' '.join(self._content_to_lines(content))
         return re.sub(r'\s+', ' ', text).strip()
 
-    def _emit_doc(self, out: Callable[[str], None], lines: List[str]) -> None:
+    def _emit_doc(self, out: Callable[[str], None], ref: Reference, lines: List[str],
+                  indent: str = '') -> None:
         """
-        Emits the given markdown lines as a '---' prefixed doc comment, trimming
-        surrounding blank lines.
+        Emits the given markdown lines as a '---' prefixed doc comment for ref, trimming
+        surrounding blank lines, then ref's @since and @deprecated.
+
+        LuaLS has no native @since, so the version is recorded as a closing paragraph.
+        @deprecated becomes LuaLS's native ---@deprecated, so the language server strikes
+        through and warns on its use; the explanation is already in the lines (the
+        prerender's Deprecated admonition, which _content_to_lines renders without its
+        title), so only the annotation is added.
         """
         while lines and not lines[0].strip():
             lines.pop(0)
         while lines and not lines[-1].strip():
             lines.pop()
-        for line in lines:
-            out('---' + line if line.strip() else '---')
-
-    def _emit_deprecated(self, out: Callable[[str], None], ref: Reference) -> None:
-        """
-        Emits LuaLS's native ---@deprecated for an element flagged @deprecated, so the
-        language server strikes through and warns on its use.  The explanation is already
-        in the element's content (the prerender's Deprecated admonition, which
-        _content_to_lines renders without its title), so this adds only the annotation.
-        """
-        if 'deprecated' in ref.flags:
-            out('---@deprecated')
-
-    def _emit_since(self, out: Callable[[str], None], ref: Reference) -> None:
-        """
-        LuaLS has no native @since, so record the version as a plain doc line.
-        """
         version = ref.flags.get('since')
         if version:
-            out('--- Since {}.'.format(version))
+            lines.extend(([''] if lines else []) + ['Since {}.'.format(version)])
+        for line in lines:
+            out(indent + ('---' + line if line.strip() else '---'))
+        if 'deprecated' in ref.flags:
+            out(indent + '---@deprecated')
 
     def _field_lhs(self, ref: FieldRef) -> str:
         """
@@ -203,9 +197,7 @@ class LuaLSRenderer(Renderer):
         lines = self._content_to_lines(ref.content)
         if ref.meta:
             lines.append('*{}*'.format(self._strip_links(ref.meta)))
-        self._emit_doc(out, lines)
-        self._emit_deprecated(out, ref)
-        self._emit_since(out, ref)
+        self._emit_doc(out, ref, lines)
         typ = self._map_type(ref.types) if ref.types else default_type
         out('---@type {}'.format(typ))
         out('{} = nil'.format(self._field_lhs(ref)))
@@ -213,9 +205,7 @@ class LuaLSRenderer(Renderer):
 
     def _emit_function(self, out: Callable[[str], None], ref: FunctionRef) -> None:
         self.ctx.update(ref=ref)
-        self._emit_doc(out, self._content_to_lines(ref.content))
-        self._emit_deprecated(out, ref)
-        self._emit_since(out, ref)
+        self._emit_doc(out, ref, self._content_to_lines(ref.content))
         for name, types, doc in ref.params:
             # A parameter with no types is one with no @tparam, which prerender already
             # reported under 'untyped' for every renderer; reporting it again here would
@@ -257,9 +247,7 @@ class LuaLSRenderer(Renderer):
         # so recombine them for the table's doc comment.
         lines = [self._strip_links(col.heading)] if col.heading else []
         lines.extend(self._content_to_lines(col.content))
-        self._emit_doc(out, lines)
-        self._emit_deprecated(out, col)
-        self._emit_since(out, col)
+        self._emit_doc(out, col, lines)
         if col.flags.get('enum'):
             # A closed enumeration maps to LuaLS's native ---@enum.
             self._emit_enum(out, col)
@@ -285,15 +273,7 @@ class LuaLSRenderer(Renderer):
         out('{} = {{'.format(col.name))
         for ref in col.fields:
             self.ctx.update(ref=ref)
-            doc = self._content_to_lines(ref.content)
-            while doc and not doc[0].strip():
-                doc.pop(0)
-            while doc and not doc[-1].strip():
-                doc.pop()
-            for line in doc:
-                out('    ---' + line if line.strip() else '    ---')
-            if 'deprecated' in ref.flags:
-                out('    ---@deprecated')
+            self._emit_doc(out, ref, self._content_to_lines(ref.content), indent='    ')
             value = ref.value if ref.value is not None else 'nil'
             out('    {} = {},'.format(ref.symbol, value))
         out('}')
@@ -359,9 +339,7 @@ class LuaLSRenderer(Renderer):
 
     def _emit_class(self, out: Callable[[str], None], topref: ClassRef) -> None:
         self.ctx.update(ref=topref)
-        self._emit_doc(out, self._content_to_lines(topref.content))
-        self._emit_deprecated(out, topref)
-        self._emit_since(out, topref)
+        self._emit_doc(out, topref, self._content_to_lines(topref.content))
         decl = '---@class {}'.format(topref.name)
         parents = self._class_parents(topref)
         if parents:
@@ -382,9 +360,7 @@ class LuaLSRenderer(Renderer):
         # their members are emitted as globals.  Explicit modules get a backing table so
         # qualified members (module.foo) resolve.
         if not topref.implicit:
-            self._emit_doc(out, self._content_to_lines(topref.content))
-            self._emit_deprecated(out, topref)
-            self._emit_since(out, topref)
+            self._emit_doc(out, topref, self._content_to_lines(topref.content))
             out('{} = {{}}'.format(topref.name))
             out('')
         for col in topref.collections:
