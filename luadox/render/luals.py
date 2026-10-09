@@ -266,7 +266,8 @@ class LuaLSRenderer(Renderer):
         """
         Emits LuaLS's native ---@enum: the annotation precedes a table literal whose keys
         are the members, so the language server treats membership as closed -- an undefined
-        member, or a raw value used where the enum type is expected, is reported.  Members
+        member, or a value that is not one of the enum's values used where the enum type is
+        expected, is reported.  Members
         keep their integer values and doc comments.
         """
         out('---@enum {}'.format(col.name))

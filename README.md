@@ -1169,8 +1169,9 @@ Mappings of note:
   name resolves in a type position and its members can be accessed; members without an
   explicit `@type` default to `any`.
 * `@enum` collections become LuaLS's native `---@enum`, so the language server treats
-  membership as closed: an undefined member, or a raw value used where the enum type is
-  expected, is reported.  Reserve `@enum` for genuinely closed sets — a table whose values
+  membership as closed: an undefined member, or a value that is not one of the enum's
+  values used where the enum type is expected, is reported.  The check is by value, so a
+  raw number or another enum's member with an equal value is accepted.  Reserve `@enum` for genuinely closed sets — a table whose values
   are combined (a bitmask) or extended at runtime should stay a `@table`, which types its
   members permissively and so does not reject correct code.
 * `@deprecated` becomes `---@deprecated`, so the language server strikes through and warns
