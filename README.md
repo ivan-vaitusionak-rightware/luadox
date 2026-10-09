@@ -1204,9 +1204,14 @@ mixin_suffix = Mixin
 # "Includes members from @{A}, @{B}, @{C}." -- so members they
 # provide resolve transitively (e.g. Widget.OnClick via a mixin in that phrase).
 mixin_doc_phrase = Includes members from
+
+# Classes and tables whose members are added at runtime (for example built by a
+# factory), whitespace/newline separated.  Each accepts any member, so accessing one
+# isn't reported as an undefined field; documented members keep their types.
+open_classes = EventArgs
 ```
 
-All three options are optional; without a `[luals]` section the output is unchanged.
+All options are optional; without a `[luals]` section the output is unchanged.
 
 ## Diagnostics
 

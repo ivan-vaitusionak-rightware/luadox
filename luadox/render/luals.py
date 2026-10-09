@@ -296,6 +296,7 @@ class LuaLSRenderer(Renderer):
         # enumeration -- many are records of typed values (e.g. property tables) -- so a
         # blanket integer default produced false type errors on correct code.
         out('---@class {}'.format(col.name))
+        self._emit_open(out, col)
         out('{} = {{}}'.format(col.name))
         out('')
         self._emit_members(out, col, DEFAULT_FIELD_TYPE)
@@ -375,6 +376,15 @@ class LuaLSRenderer(Renderer):
                 add(name)
         return parents
 
+    def _emit_open(self, out: Callable[[str], None], ref: Reference) -> None:
+        """
+        Lets a class or table configured in [luals] open_classes take any member, for one
+        whose members are added at runtime (e.g. built by a factory), so accessing them
+        isn't reported as an undefined field.
+        """
+        if ref.name in self._open_classes:
+            out('---@field [string] any')
+
     def _emit_class(self, out: Callable[[str], None], topref: ClassRef) -> None:
         self.ctx.update(ref=topref)
         self._emit_doc(out, topref, self._content_to_lines(topref.content))
@@ -383,6 +393,7 @@ class LuaLSRenderer(Renderer):
         if parents:
             decl += ' : {}'.format(', '.join(parents))
         out(decl)
+        self._emit_open(out, topref)
         for col in topref.collections:
             for fn in col.functions:
                 if self._is_constructor(fn):
@@ -445,6 +456,16 @@ class LuaLSRenderer(Renderer):
                 log.critical('invalid [luals] globals token "%s": expected name[:type]', tok)
                 sys.exit(1)
             env_globals.append((name, typ or 'any'))
+        self._open_classes = set(files_str_to_list(
+            self.config.get('luals', 'open_classes', fallback='')))
+        for name in self._open_classes:
+            ref = self.parser.refs.get(name)
+            # A name that is no documented class or table would silently leave the class it
+            # meant closed, so fail like the other fatal config errors.
+            if not isinstance(ref, (ClassRef, TableRef)) or ref.flags.get('enum'):
+                log.critical('invalid [luals] open_classes name "%s": expected a documented '
+                             'class or non-enum table', name)
+                sys.exit(1)
 
         lines: List[str] = []
         out = lines.append
