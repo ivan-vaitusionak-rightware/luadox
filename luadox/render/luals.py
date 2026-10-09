@@ -320,6 +320,9 @@ class LuaLSRenderer(Renderer):
         for ref in col.fields:
             self.ctx.update(ref=ref)
             self._emit_doc(out, ref, self._content_to_lines(ref.content), indent='    ')
+            # A member with no parsed value (already reported by validate_enums) stays as
+            # 'Member = nil': a definitions file is never executed, and LuaLS keeps the key
+            # as a member, so skipping it would turn correct uses into undefined fields.
             value = ref.value if ref.value is not None else 'nil'
             out('    {} = {},'.format(ref.symbol, value))
         out('}')
