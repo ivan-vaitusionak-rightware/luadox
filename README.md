@@ -1176,9 +1176,10 @@ Mappings of note:
 * `@enum` collections become LuaLS's native `---@enum`, so the language server treats
   membership as closed: an undefined member, or a value that is not one of the enum's
   values used where the enum type is expected, is reported.  The check is by value, so a
-  raw number or another enum's member with an equal value is accepted.  Reserve `@enum` for genuinely closed sets — a table whose values
-  are combined (a bitmask) or extended at runtime should stay a `@table`, which types its
-  members permissively and so does not reject correct code.
+  raw number or another enum's member with an equal value is accepted.  Reserve `@enum`
+  for genuinely closed sets — a table whose values are combined (a bitmask) or extended at
+  runtime should stay a `@table`, which types its members permissively and so does not
+  reject correct code.
 * `@deprecated` becomes `---@deprecated`, so the language server strikes through and warns
   on use.  `@since` has no LuaLS equivalent and is recorded as a plain doc line.
 * Type names are translated to their LuaLS equivalents where applicable (`bool` →
